@@ -13,3 +13,4 @@ Commit for 2025-10-12 11:50:57 - Updates for 2025-10-12 11:50:57
 Commit for 2025-10-12 12:16:26 - chore: cleanup unused imports and formatting
 Commit for 2025-10-12 13:56:16 - chore(deps): update package dependencies
 Commit for 2025-10-12 16:54:28 - fix(ledger): adjust debit and credit balance calculation
+Commit for 2025-10-13 12:38:51 - fix(auth): handle session expiration and redirect
