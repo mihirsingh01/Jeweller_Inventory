@@ -16,3 +16,4 @@ Commit for 2025-10-12 16:54:28 - fix(ledger): adjust debit and credit balance ca
 Commit for 2025-10-13 12:38:51 - fix(auth): handle session expiration and redirect
 Commit for 2025-10-13 15:50:45 - chore(deps): update package dependencies
 Commit for 2025-10-15 11:23:44 - refactor(ui): improve responsive layout and tables
+Commit for 2025-10-15 14:57:33 - chore: cleanup unused imports and formatting
