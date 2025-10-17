@@ -22,3 +22,4 @@ Commit for 2025-10-16 13:36:47 - chore(deps): update package dependencies
 Commit for 2025-10-16 14:29:45 - Updates for 2025-10-16 14:29:45
 Commit for 2025-10-16 16:00:33 - style(theme): polish button styling and contrast
 Commit for 2025-10-16 18:38:29 - perf(stock): optimize queries and caching
+Commit for 2025-10-17 09:51:24 - refactor(ui): improve responsive layout and tables
