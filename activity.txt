@@ -33,3 +33,4 @@ Commit for 2025-10-21 09:42:33 - refactor(components): extract reusable modal co
 Commit for 2025-10-21 10:08:10 - feat(reports): improve export formatting for audit log
 Commit for 2025-10-21 16:42:33 - Updates for 2025-10-21 16:42:33
 Commit for 2025-10-22 09:11:15 - feat(inventory): update stock item tracking
+Commit for 2025-10-22 10:08:41 - fix(ledger): adjust debit and credit balance calculation
