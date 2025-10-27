@@ -48,3 +48,4 @@ Commit for 2025-10-26 13:05:33 - Updates for 2025-10-26 13:05:33
 Commit for 2025-10-26 15:46:40 - feat(billing): improve invoice item breakdown
 Commit for 2025-10-27 09:04:00 - chore: cleanup unused imports and formatting
 Commit for 2025-10-27 10:13:50 - refactor(ui): improve responsive layout and tables
+Commit for 2025-10-27 11:21:14 - fix(auth): handle session expiration and redirect
