@@ -68,3 +68,4 @@ Commit for 2025-11-03 15:39:31 - chore(deps): update package dependencies
 Commit for 2025-11-04 14:02:34 - feat(reports): improve export formatting for audit log
 Commit for 2025-11-04 14:05:27 - fix(search): refine customer party search filter
 Commit for 2025-11-04 18:07:08 - fix(ledger): adjust debit and credit balance calculation
+Commit for 2025-11-06 10:49:55 - feat(reports): improve export formatting for audit log
