@@ -73,3 +73,4 @@ Commit for 2025-11-06 12:02:48 - fix(auth): handle session expiration and redire
 Commit for 2025-11-07 09:33:46 - Updates for 2025-11-07 09:33:46
 Commit for 2025-11-07 12:00:37 - Updates for 2025-11-07 12:00:37
 Commit for 2025-11-07 12:38:57 - Updates for 2025-11-07 12:38:57
+Commit for 2025-11-07 17:08:03 - docs(readme): update setup and architecture notes
