@@ -85,3 +85,4 @@ Commit for 2025-11-12 09:39:54 - Updates for 2025-11-12 09:39:54
 Commit for 2025-11-13 11:06:57 - chore: cleanup unused imports and formatting
 Commit for 2025-11-13 11:47:14 - fix(ledger): adjust debit and credit balance calculation
 Commit for 2025-11-13 11:58:10 - fix(ledger): adjust debit and credit balance calculation
+Commit for 2025-11-13 16:15:10 - feat(reports): improve export formatting for audit log
