@@ -100,3 +100,4 @@ Commit for 2025-11-20 16:56:46 - docs(readme): update setup and architecture not
 Commit for 2025-11-21 12:23:25 - feat(rates): update daily gold and silver market rates
 Commit for 2025-11-21 14:30:19 - test(vouchers): add test cases for entry posting
 Commit for 2025-11-23 11:53:09 - style(theme): polish button styling and contrast
+Commit for 2025-11-23 12:56:31 - refactor(ui): improve responsive layout and tables
