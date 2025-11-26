@@ -109,3 +109,4 @@ Commit for 2025-11-24 16:08:40 - Updates for 2025-11-24 16:08:40
 Commit for 2025-11-24 18:01:43 - Updates for 2025-11-24 18:01:43
 Commit for 2025-11-25 16:30:17 - chore: cleanup unused imports and formatting
 Commit for 2025-11-26 11:09:49 - fix(auth): handle session expiration and redirect
+Commit for 2025-11-26 14:40:17 - fix(search): refine customer party search filter
