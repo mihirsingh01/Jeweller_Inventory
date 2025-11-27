@@ -112,3 +112,4 @@ Commit for 2025-11-26 11:09:49 - fix(auth): handle session expiration and redire
 Commit for 2025-11-26 14:40:17 - fix(search): refine customer party search filter
 Commit for 2025-11-26 18:49:24 - docs(readme): update setup and architecture notes
 Commit for 2025-11-26 18:58:40 - Updates for 2025-11-26 18:58:40
+Commit for 2025-11-27 12:58:10 - feat(billing): improve invoice item breakdown
