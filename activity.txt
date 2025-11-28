@@ -116,3 +116,4 @@ Commit for 2025-11-27 12:58:10 - feat(billing): improve invoice item breakdown
 Commit for 2025-11-27 13:08:55 - style(theme): polish button styling and contrast
 Commit for 2025-11-27 16:04:57 - style(theme): polish button styling and contrast
 Commit for 2025-11-27 18:23:59 - feat(rates): update daily gold and silver market rates
+Commit for 2025-11-28 13:44:35 - perf(stock): optimize queries and caching
