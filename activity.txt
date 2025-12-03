@@ -130,3 +130,4 @@ Commit for 2025-12-02 14:18:51 - chore: cleanup unused imports and formatting
 Commit for 2025-12-02 15:17:50 - style(theme): polish button styling and contrast
 Commit for 2025-12-02 15:39:56 - perf(stock): optimize queries and caching
 Commit for 2025-12-02 16:23:03 - Updates for 2025-12-02 16:23:03
+Commit for 2025-12-03 15:17:09 - fix(ledger): adjust debit and credit balance calculation
