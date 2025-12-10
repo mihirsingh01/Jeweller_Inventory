@@ -146,3 +146,4 @@ Commit for 2025-12-08 10:44:43 - fix(auth): handle session expiration and redire
 Commit for 2025-12-08 16:29:09 - fix(auth): handle session expiration and redirect
 Commit for 2025-12-08 18:17:43 - chore: cleanup unused imports and formatting
 Commit for 2025-12-10 11:00:23 - fix(search): refine customer party search filter
+Commit for 2025-12-10 13:07:28 - perf(stock): optimize queries and caching
