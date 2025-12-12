@@ -154,3 +154,4 @@ Commit for 2025-12-11 12:55:45 - refactor(ui): improve responsive layout and tab
 Commit for 2025-12-11 14:05:37 - feat(reports): improve export formatting for audit log
 Commit for 2025-12-12 10:27:01 - docs(readme): update setup and architecture notes
 Commit for 2025-12-12 17:26:13 - Updates for 2025-12-12 17:26:13
+Commit for 2025-12-12 18:11:49 - feat(billing): improve invoice item breakdown
