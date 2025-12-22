@@ -174,3 +174,4 @@ Commit for 2025-12-21 16:34:31 - refactor(components): extract reusable modal co
 Commit for 2025-12-21 17:47:47 - Updates for 2025-12-21 17:47:47
 Commit for 2025-12-22 13:48:33 - feat(billing): improve invoice item breakdown
 Commit for 2025-12-22 15:09:21 - refactor(ui): improve responsive layout and tables
+Commit for 2025-12-22 15:52:38 - feat(reports): improve export formatting for audit log
