@@ -195,3 +195,4 @@ Commit for 2026-01-02 17:01:01 - Updates for 2026-01-02 17:01:01
 Commit for 2026-01-04 16:56:52 - fix(search): refine customer party search filter
 Commit for 2026-01-05 15:30:57 - docs(readme): update setup and architecture notes
 Commit for 2026-01-05 15:54:31 - style(theme): polish button styling and contrast
+Commit for 2026-01-05 16:41:40 - docs(readme): update setup and architecture notes
