@@ -205,3 +205,4 @@ Commit for 2026-01-13 09:58:08 - test(vouchers): add test cases for entry postin
 Commit for 2026-01-13 10:45:43 - perf(stock): optimize queries and caching
 Commit for 2026-01-13 17:21:01 - fix(auth): handle session expiration and redirect
 Commit for 2026-01-13 17:21:04 - fix(search): refine customer party search filter
+Commit for 2026-01-13 17:35:49 - feat(reports): improve export formatting for audit log
