@@ -207,3 +207,4 @@ Commit for 2026-01-13 17:21:01 - fix(auth): handle session expiration and redire
 Commit for 2026-01-13 17:21:04 - fix(search): refine customer party search filter
 Commit for 2026-01-13 17:35:49 - feat(reports): improve export formatting for audit log
 Commit for 2026-01-14 10:13:06 - feat(reports): improve export formatting for audit log
+Commit for 2026-01-15 14:54:20 - fix(search): refine customer party search filter
