@@ -217,3 +217,4 @@ Commit for 2026-01-19 11:24:47 - feat(rates): update daily gold and silver marke
 Commit for 2026-01-19 13:07:57 - Updates for 2026-01-19 13:07:57
 Commit for 2026-01-19 14:33:52 - Updates for 2026-01-19 14:33:52
 Commit for 2026-01-19 15:27:25 - Updates for 2026-01-19 15:27:25
+Commit for 2026-01-20 16:02:14 - docs(readme): update setup and architecture notes
