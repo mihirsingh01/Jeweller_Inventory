@@ -237,3 +237,4 @@ Commit for 2026-01-25 13:32:14 - test(vouchers): add test cases for entry postin
 Commit for 2026-01-25 13:53:25 - fix(search): refine customer party search filter
 Commit for 2026-01-25 14:11:26 - fix(ledger): adjust debit and credit balance calculation
 Commit for 2026-01-25 17:17:13 - Updates for 2026-01-25 17:17:13
+Commit for 2026-01-25 17:19:26 - test(vouchers): add test cases for entry posting
