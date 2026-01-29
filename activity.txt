@@ -253,3 +253,4 @@ Commit for 2026-01-28 12:29:23 - Updates for 2026-01-28 12:29:23
 Commit for 2026-01-28 15:28:53 - feat(inventory): update stock item tracking
 Commit for 2026-01-29 10:31:54 - Updates for 2026-01-29 10:31:54
 Commit for 2026-01-29 16:54:54 - test(vouchers): add test cases for entry posting
+Commit for 2026-01-29 17:01:14 - feat(billing): improve invoice item breakdown
