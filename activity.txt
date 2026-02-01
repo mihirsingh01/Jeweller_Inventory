@@ -262,3 +262,4 @@ Commit for 2026-01-30 16:15:45 - perf(stock): optimize queries and caching
 Commit for 2026-02-01 11:02:54 - test(vouchers): add test cases for entry posting
 Commit for 2026-02-01 11:35:33 - Updates for 2026-02-01 11:35:33
 Commit for 2026-02-01 13:09:49 - feat(inventory): update stock item tracking
+Commit for 2026-02-01 17:39:08 - feat(reports): improve export formatting for audit log
