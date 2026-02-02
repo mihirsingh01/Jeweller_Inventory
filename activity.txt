@@ -263,3 +263,4 @@ Commit for 2026-02-01 11:02:54 - test(vouchers): add test cases for entry postin
 Commit for 2026-02-01 11:35:33 - Updates for 2026-02-01 11:35:33
 Commit for 2026-02-01 13:09:49 - feat(inventory): update stock item tracking
 Commit for 2026-02-01 17:39:08 - feat(reports): improve export formatting for audit log
+Commit for 2026-02-02 13:14:40 - fix(auth): handle session expiration and redirect
