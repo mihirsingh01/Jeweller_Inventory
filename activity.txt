@@ -270,3 +270,4 @@ Commit for 2026-02-02 18:06:51 - Updates for 2026-02-02 18:06:51
 Commit for 2026-02-03 14:15:05 - Updates for 2026-02-03 14:15:05
 Commit for 2026-02-03 15:21:43 - Updates for 2026-02-03 15:21:43
 Commit for 2026-02-03 18:10:28 - fix(auth): handle session expiration and redirect
+Commit for 2026-02-03 18:50:12 - fix(search): refine customer party search filter
