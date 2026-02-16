@@ -304,3 +304,4 @@ Commit for 2026-02-15 16:29:55 - fix(search): refine customer party search filte
 Commit for 2026-02-15 16:43:49 - fix(auth): handle session expiration and redirect
 Commit for 2026-02-16 11:52:46 - Updates for 2026-02-16 11:52:46
 Commit for 2026-02-16 12:04:43 - fix(ledger): adjust debit and credit balance calculation
+Commit for 2026-02-16 14:49:34 - docs(readme): update setup and architecture notes
