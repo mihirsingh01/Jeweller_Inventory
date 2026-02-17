@@ -311,3 +311,4 @@ Commit for 2026-02-17 11:00:01 - perf(stock): optimize queries and caching
 Commit for 2026-02-17 12:03:24 - refactor(ui): improve responsive layout and tables
 Commit for 2026-02-17 12:06:33 - Updates for 2026-02-17 12:06:33
 Commit for 2026-02-17 13:53:31 - Updates for 2026-02-17 13:53:31
+Commit for 2026-02-17 18:40:02 - docs(readme): update setup and architecture notes
