@@ -319,3 +319,4 @@ Commit for 2026-02-21 11:11:24 - chore(deps): update package dependencies
 Commit for 2026-02-21 12:44:15 - refactor(components): extract reusable modal component
 Commit for 2026-02-21 17:57:28 - feat(rates): update daily gold and silver market rates
 Commit for 2026-02-23 10:09:50 - style(theme): polish button styling and contrast
+Commit for 2026-02-23 13:00:45 - feat(billing): improve invoice item breakdown
