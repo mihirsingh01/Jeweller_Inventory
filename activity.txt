@@ -322,3 +322,4 @@ Commit for 2026-02-23 10:09:50 - style(theme): polish button styling and contras
 Commit for 2026-02-23 13:00:45 - feat(billing): improve invoice item breakdown
 Commit for 2026-02-23 16:41:40 - fix(search): refine customer party search filter
 Commit for 2026-02-23 17:53:16 - refactor(ui): improve responsive layout and tables
+Commit for 2026-02-24 16:53:28 - feat(billing): improve invoice item breakdown
