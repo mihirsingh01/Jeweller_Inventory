@@ -363,3 +363,4 @@ Commit for 2026-03-13 11:49:16 - feat(reports): improve export formatting for au
 Commit for 2026-03-14 11:43:36 - refactor(components): extract reusable modal component
 Commit for 2026-03-14 13:40:06 - refactor(ui): improve responsive layout and tables
 Commit for 2026-03-14 13:59:38 - fix(auth): handle session expiration and redirect
+Commit for 2026-03-14 16:09:30 - chore: cleanup unused imports and formatting
