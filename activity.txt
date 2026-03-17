@@ -368,3 +368,4 @@ Commit for 2026-03-14 17:04:52 - feat(inventory): update stock item tracking
 Commit for 2026-03-16 15:47:41 - fix(auth): handle session expiration and redirect
 Commit for 2026-03-16 15:47:52 - Updates for 2026-03-16 15:47:52
 Commit for 2026-03-16 15:58:28 - Updates for 2026-03-16 15:58:28
+Commit for 2026-03-17 10:02:05 - fix(search): refine customer party search filter
