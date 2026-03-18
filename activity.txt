@@ -374,3 +374,4 @@ Commit for 2026-03-17 11:33:10 - docs(readme): update setup and architecture not
 Commit for 2026-03-17 12:11:21 - refactor(components): extract reusable modal component
 Commit for 2026-03-17 15:51:04 - Updates for 2026-03-17 15:51:04
 Commit for 2026-03-18 11:44:45 - feat(rates): update daily gold and silver market rates
+Commit for 2026-03-18 13:03:05 - refactor(ui): improve responsive layout and tables
