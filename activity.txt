@@ -383,3 +383,4 @@ Commit for 2026-03-19 13:49:50 - test(vouchers): add test cases for entry postin
 Commit for 2026-03-19 16:39:37 - fix(search): refine customer party search filter
 Commit for 2026-03-20 09:05:36 - feat(reports): improve export formatting for audit log
 Commit for 2026-03-20 15:50:38 - fix(ledger): adjust debit and credit balance calculation
+Commit for 2026-03-20 18:18:31 - feat(reports): improve export formatting for audit log
