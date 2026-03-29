@@ -398,3 +398,4 @@ Commit for 2026-03-27 12:48:20 - feat(rates): update daily gold and silver marke
 Commit for 2026-03-27 16:47:10 - refactor(ui): improve responsive layout and tables
 Commit for 2026-03-29 13:16:13 - feat(billing): improve invoice item breakdown
 Commit for 2026-03-29 13:23:13 - Updates for 2026-03-29 13:23:13
+Commit for 2026-03-29 14:06:23 - style(theme): polish button styling and contrast
