@@ -411,3 +411,4 @@ Commit for 2026-03-31 11:04:18 - feat(billing): improve invoice item breakdown
 Commit for 2026-03-31 11:14:06 - chore: cleanup unused imports and formatting
 Commit for 2026-03-31 17:30:37 - chore(deps): update package dependencies
 Commit for 2026-04-02 16:32:15 - fix(auth): handle session expiration and redirect
+Commit for 2026-04-03 11:40:19 - feat(billing): improve invoice item breakdown
