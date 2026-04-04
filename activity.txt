@@ -416,3 +416,4 @@ Commit for 2026-04-03 12:47:17 - refactor(ui): improve responsive layout and tab
 Commit for 2026-04-03 14:55:08 - refactor(ui): improve responsive layout and tables
 Commit for 2026-04-03 15:14:20 - feat(rates): update daily gold and silver market rates
 Commit for 2026-04-03 17:10:54 - fix(ledger): adjust debit and credit balance calculation
+Commit for 2026-04-04 12:07:17 - feat(billing): improve invoice item breakdown
