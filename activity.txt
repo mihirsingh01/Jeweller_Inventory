@@ -421,3 +421,4 @@ Commit for 2026-04-04 13:09:59 - refactor(components): extract reusable modal co
 Commit for 2026-04-05 11:05:16 - feat(reports): improve export formatting for audit log
 Commit for 2026-04-05 11:32:47 - Updates for 2026-04-05 11:32:47
 Commit for 2026-04-05 16:07:45 - Updates for 2026-04-05 16:07:45
+Commit for 2026-04-05 17:38:11 - docs(readme): update setup and architecture notes
