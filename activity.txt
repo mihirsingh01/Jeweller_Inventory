@@ -435,3 +435,4 @@ Commit for 2026-04-09 16:55:17 - Updates for 2026-04-09 16:55:17
 Commit for 2026-04-09 17:52:49 - fix(ledger): adjust debit and credit balance calculation
 Commit for 2026-04-09 17:55:45 - Updates for 2026-04-09 17:55:45
 Commit for 2026-04-12 11:57:42 - docs(readme): update setup and architecture notes
+Commit for 2026-04-12 14:12:23 - docs(readme): update setup and architecture notes
