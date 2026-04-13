@@ -439,3 +439,4 @@ Commit for 2026-04-12 14:12:23 - docs(readme): update setup and architecture not
 Commit for 2026-04-12 14:42:36 - fix(search): refine customer party search filter
 Commit for 2026-04-12 17:15:21 - feat(rates): update daily gold and silver market rates
 Commit for 2026-04-13 11:41:30 - style(theme): polish button styling and contrast
+Commit for 2026-04-13 12:34:10 - fix(ledger): adjust debit and credit balance calculation
