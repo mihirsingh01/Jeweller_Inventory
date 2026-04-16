@@ -450,3 +450,4 @@ Commit for 2026-04-15 12:17:22 - fix(search): refine customer party search filte
 Commit for 2026-04-15 14:52:35 - feat(reports): improve export formatting for audit log
 Commit for 2026-04-15 17:25:48 - perf(stock): optimize queries and caching
 Commit for 2026-04-15 18:03:21 - feat(reports): improve export formatting for audit log
+Commit for 2026-04-16 09:00:59 - style(theme): polish button styling and contrast
