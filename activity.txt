@@ -454,3 +454,4 @@ Commit for 2026-04-16 09:00:59 - style(theme): polish button styling and contras
 Commit for 2026-04-16 12:45:35 - fix(auth): handle session expiration and redirect
 Commit for 2026-04-16 13:22:30 - fix(search): refine customer party search filter
 Commit for 2026-04-16 14:17:42 - Updates for 2026-04-16 14:17:42
+Commit for 2026-04-16 16:23:45 - fix(auth): handle session expiration and redirect
