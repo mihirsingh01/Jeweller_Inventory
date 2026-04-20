@@ -458,3 +458,4 @@ Commit for 2026-04-16 16:23:45 - fix(auth): handle session expiration and redire
 Commit for 2026-04-17 18:21:55 - fix(auth): handle session expiration and redirect
 Commit for 2026-04-20 10:14:06 - fix(ledger): adjust debit and credit balance calculation
 Commit for 2026-04-20 14:26:29 - style(theme): polish button styling and contrast
+Commit for 2026-04-20 14:30:13 - refactor(components): extract reusable modal component
