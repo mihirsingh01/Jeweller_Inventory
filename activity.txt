@@ -465,3 +465,4 @@ Commit for 2026-04-21 14:50:19 - Updates for 2026-04-21 14:50:19
 Commit for 2026-04-21 16:26:42 - Updates for 2026-04-21 16:26:42
 Commit for 2026-04-22 09:55:56 - Updates for 2026-04-22 09:55:56
 Commit for 2026-04-22 15:42:18 - refactor(components): extract reusable modal component
+Commit for 2026-04-23 14:28:16 - docs(readme): update setup and architecture notes
