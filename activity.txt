@@ -489,3 +489,4 @@ Commit for 2026-05-04 15:49:26 - refactor(ui): improve responsive layout and tab
 Commit for 2026-05-05 09:20:45 - fix(search): refine customer party search filter
 Commit for 2026-05-05 11:23:23 - feat(inventory): update stock item tracking
 Commit for 2026-05-05 18:04:10 - style(theme): polish button styling and contrast
+Commit for 2026-05-05 18:23:19 - fix(search): refine customer party search filter
