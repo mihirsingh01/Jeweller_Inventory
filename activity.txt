@@ -491,3 +491,4 @@ Commit for 2026-05-05 11:23:23 - feat(inventory): update stock item tracking
 Commit for 2026-05-05 18:04:10 - style(theme): polish button styling and contrast
 Commit for 2026-05-05 18:23:19 - fix(search): refine customer party search filter
 Commit for 2026-05-06 09:38:52 - fix(ledger): adjust debit and credit balance calculation
+Commit for 2026-05-06 10:37:20 - feat(inventory): update stock item tracking
