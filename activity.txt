@@ -499,3 +499,4 @@ Commit for 2026-05-07 11:57:05 - refactor(ui): improve responsive layout and tab
 Commit for 2026-05-08 18:34:35 - Updates for 2026-05-08 18:34:35
 Commit for 2026-05-09 13:49:29 - Updates for 2026-05-09 13:49:29
 Commit for 2026-05-09 16:22:16 - Updates for 2026-05-09 16:22:16
+Commit for 2026-05-09 17:50:12 - fix(ledger): adjust debit and credit balance calculation
