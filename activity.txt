@@ -513,3 +513,4 @@ Commit for 2026-05-12 17:37:46 - fix(ledger): adjust debit and credit balance ca
 Commit for 2026-05-13 12:31:28 - Updates for 2026-05-13 12:31:28
 Commit for 2026-05-13 16:07:57 - Updates for 2026-05-13 16:07:57
 Commit for 2026-05-13 16:12:56 - Updates for 2026-05-13 16:12:56
+Commit for 2026-05-13 18:24:36 - refactor(components): extract reusable modal component
