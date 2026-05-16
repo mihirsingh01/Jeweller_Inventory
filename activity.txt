@@ -520,3 +520,4 @@ Commit for 2026-05-14 14:10:14 - test(vouchers): add test cases for entry postin
 Commit for 2026-05-14 15:48:45 - feat(reports): improve export formatting for audit log
 Commit for 2026-05-14 16:57:19 - fix(search): refine customer party search filter
 Commit for 2026-05-15 16:41:43 - test(vouchers): add test cases for entry posting
+Commit for 2026-05-16 15:32:17 - docs(readme): update setup and architecture notes
