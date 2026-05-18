@@ -525,3 +525,4 @@ Commit for 2026-05-16 17:41:29 - feat(rates): update daily gold and silver marke
 Commit for 2026-05-16 17:47:20 - feat(reports): improve export formatting for audit log
 Commit for 2026-05-18 12:00:31 - Updates for 2026-05-18 12:00:31
 Commit for 2026-05-18 12:06:47 - Updates for 2026-05-18 12:06:47
+Commit for 2026-05-18 12:09:47 - docs(readme): update setup and architecture notes
