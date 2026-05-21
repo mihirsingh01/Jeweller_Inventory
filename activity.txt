@@ -536,3 +536,4 @@ Commit for 2026-05-20 18:11:42 - feat(reports): improve export formatting for au
 Commit for 2026-05-20 18:48:41 - test(vouchers): add test cases for entry posting
 Commit for 2026-05-21 09:38:14 - feat(rates): update daily gold and silver market rates
 Commit for 2026-05-21 10:41:16 - feat(rates): update daily gold and silver market rates
+Commit for 2026-05-21 13:53:20 - refactor(components): extract reusable modal component
