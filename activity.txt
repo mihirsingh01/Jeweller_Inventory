@@ -544,3 +544,4 @@ Commit for 2026-05-23 11:47:32 - fix(auth): handle session expiration and redire
 Commit for 2026-05-23 12:16:32 - Updates for 2026-05-23 12:16:32
 Commit for 2026-05-23 13:13:29 - fix(search): refine customer party search filter
 Commit for 2026-05-23 13:55:55 - Updates for 2026-05-23 13:55:55
+Commit for 2026-05-23 14:39:01 - fix(search): refine customer party search filter
