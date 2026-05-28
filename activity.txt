@@ -558,3 +558,4 @@ Commit for 2026-05-27 12:04:09 - fix(search): refine customer party search filte
 Commit for 2026-05-27 12:34:33 - refactor(ui): improve responsive layout and tables
 Commit for 2026-05-27 14:58:10 - Updates for 2026-05-27 14:58:10
 Commit for 2026-05-27 18:33:56 - feat(inventory): update stock item tracking
+Commit for 2026-05-28 14:21:43 - feat(reports): improve export formatting for audit log
