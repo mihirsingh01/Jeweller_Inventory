@@ -566,3 +566,4 @@ Commit for 2026-05-29 10:05:40 - Updates for 2026-05-29 10:05:40
 Commit for 2026-05-29 11:09:36 - feat(inventory): update stock item tracking
 Commit for 2026-05-29 11:18:24 - feat(rates): update daily gold and silver market rates
 Commit for 2026-06-01 09:58:21 - Updates for 2026-06-01 09:58:21
+Commit for 2026-06-01 13:40:33 - fix(auth): handle session expiration and redirect
