@@ -573,3 +573,4 @@ Commit for 2026-06-04 09:50:21 - chore(deps): update package dependencies
 Commit for 2026-06-04 10:23:41 - Updates for 2026-06-04 10:23:41
 Commit for 2026-06-04 11:03:31 - test(vouchers): add test cases for entry posting
 Commit for 2026-06-04 16:13:23 - chore(deps): update package dependencies
+Commit for 2026-06-04 18:40:14 - fix(ledger): adjust debit and credit balance calculation
