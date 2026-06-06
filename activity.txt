@@ -580,3 +580,4 @@ Commit for 2026-06-05 17:18:21 - style(theme): polish button styling and contras
 Commit for 2026-06-06 12:04:38 - Updates for 2026-06-06 12:04:38
 Commit for 2026-06-06 12:36:52 - Updates for 2026-06-06 12:36:52
 Commit for 2026-06-06 13:59:29 - refactor(components): extract reusable modal component
+Commit for 2026-06-06 16:48:31 - docs(readme): update setup and architecture notes
