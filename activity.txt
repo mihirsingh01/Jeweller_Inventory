@@ -579,3 +579,4 @@ Commit for 2026-06-05 16:45:22 - feat(reports): improve export formatting for au
 Commit for 2026-06-05 17:18:21 - style(theme): polish button styling and contrast
 Commit for 2026-06-06 12:04:38 - Updates for 2026-06-06 12:04:38
 Commit for 2026-06-06 12:36:52 - Updates for 2026-06-06 12:36:52
+Commit for 2026-06-06 13:59:29 - refactor(components): extract reusable modal component
