@@ -599,3 +599,4 @@ Commit for 2026-06-15 17:57:05 - Updates for 2026-06-15 17:57:05
 Commit for 2026-06-18 17:08:00 - chore(deps): update package dependencies
 Commit for 2026-06-19 11:50:39 - Updates for 2026-06-19 11:50:39
 Commit for 2026-06-19 12:37:12 - feat(inventory): update stock item tracking
+Commit for 2026-06-19 15:56:18 - docs(readme): update setup and architecture notes
