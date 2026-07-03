@@ -626,3 +626,4 @@ Commit for 2026-07-02 14:36:33 - refactor(components): extract reusable modal co
 Commit for 2026-07-02 15:40:44 - Updates for 2026-07-02 15:40:44
 Commit for 2026-07-02 16:18:10 - Updates for 2026-07-02 16:18:10
 Commit for 2026-07-03 11:23:11 - Updates for 2026-07-03 11:23:11
+Commit for 2026-07-03 15:12:34 - docs(readme): update setup and architecture notes
