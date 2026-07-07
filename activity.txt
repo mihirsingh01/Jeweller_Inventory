@@ -630,3 +630,4 @@ Commit for 2026-07-03 15:12:34 - docs(readme): update setup and architecture not
 Commit for 2026-07-03 16:42:45 - refactor(ui): improve responsive layout and tables
 Commit for 2026-07-06 14:59:21 - feat(reports): improve export formatting for audit log
 Commit for 2026-07-06 17:10:50 - fix(ledger): adjust debit and credit balance calculation
+Commit for 2026-07-07 17:55:22 - fix(search): refine customer party search filter
