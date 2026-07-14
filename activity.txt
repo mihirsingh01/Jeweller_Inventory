@@ -647,3 +647,4 @@ Commit for 2026-07-14 10:54:25 - refactor(ui): improve responsive layout and tab
 Commit for 2026-07-14 13:25:37 - Updates for 2026-07-14 13:25:37
 Commit for 2026-07-14 13:36:31 - fix(ledger): adjust debit and credit balance calculation
 Commit for 2026-07-14 16:33:07 - Updates for 2026-07-14 16:33:07
+Commit for 2026-07-14 16:49:36 - perf(stock): optimize queries and caching
