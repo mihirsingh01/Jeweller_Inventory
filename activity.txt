@@ -655,3 +655,4 @@ Commit for 2026-07-16 12:43:22 - Updates for 2026-07-16 12:43:22
 Commit for 2026-07-16 15:22:00 - Updates for 2026-07-16 15:22:00
 Commit for 2026-07-17 10:12:05 - chore: cleanup unused imports and formatting
 Commit for 2026-07-17 16:23:25 - perf(stock): optimize queries and caching
+Commit for 2026-07-17 17:33:32 - fix(ledger): adjust debit and credit balance calculation
