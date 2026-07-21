@@ -662,3 +662,4 @@ Commit for 2026-07-20 13:19:00 - feat(billing): improve invoice item breakdown
 Commit for 2026-07-20 15:02:30 - Updates for 2026-07-20 15:02:30
 Commit for 2026-07-21 09:45:38 - style(theme): polish button styling and contrast
 Commit for 2026-07-21 10:00:36 - feat(reports): improve export formatting for audit log
+Commit for 2026-07-21 14:45:48 - refactor(ui): improve responsive layout and tables
