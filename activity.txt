@@ -684,3 +684,4 @@ Commit for 2026-07-29 09:29:16 - docs(readme): update setup and architecture not
 Commit for 2026-07-29 11:20:58 - Updates for 2026-07-29 11:20:58
 Commit for 2026-07-29 11:38:44 - fix(search): refine customer party search filter
 Commit for 2026-07-29 13:02:37 - fix(auth): handle session expiration and redirect
+Commit for 2026-07-29 14:00:36 - refactor(ui): improve responsive layout and tables
