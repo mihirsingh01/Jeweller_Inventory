@@ -686,3 +686,4 @@ Commit for 2026-07-29 11:38:44 - fix(search): refine customer party search filte
 Commit for 2026-07-29 13:02:37 - fix(auth): handle session expiration and redirect
 Commit for 2026-07-29 14:00:36 - refactor(ui): improve responsive layout and tables
 Commit for 2026-07-30 09:21:45 - perf(stock): optimize queries and caching
+Commit for 2026-07-30 14:29:46 - feat(billing): improve invoice item breakdown
