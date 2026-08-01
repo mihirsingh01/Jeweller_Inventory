@@ -690,3 +690,4 @@ Commit for 2026-07-30 14:29:46 - feat(billing): improve invoice item breakdown
 Commit for 2026-07-30 16:58:19 - Updates for 2026-07-30 16:58:19
 Commit for 2026-07-31 16:10:51 - test(vouchers): add test cases for entry posting
 Commit for 2026-07-31 18:10:25 - Updates for 2026-07-31 18:10:25
+Commit for 2026-08-01 11:57:25 - docs(readme): update setup and architecture notes
