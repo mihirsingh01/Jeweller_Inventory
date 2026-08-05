@@ -699,3 +699,4 @@ Commit for 2026-08-04 12:11:27 - chore(deps): update package dependencies
 Commit for 2026-08-04 13:18:23 - Updates for 2026-08-04 13:18:23
 Commit for 2026-08-05 10:32:37 - Updates for 2026-08-05 10:32:37
 Commit for 2026-08-05 15:44:59 - style(theme): polish button styling and contrast
+Commit for 2026-08-05 18:34:52 - feat(reports): improve export formatting for audit log
