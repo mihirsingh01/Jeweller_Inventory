@@ -718,3 +718,4 @@ Commit for 2026-08-14 14:08:22 - Updates for 2026-08-14 14:08:22
 Commit for 2026-08-16 11:43:06 - perf(stock): optimize queries and caching
 Commit for 2026-08-16 11:55:05 - perf(stock): optimize queries and caching
 Commit for 2026-08-16 15:14:05 - Updates for 2026-08-16 15:14:05
+Commit for 2026-08-17 12:58:44 - fix(auth): handle session expiration and redirect
