@@ -741,3 +741,4 @@ Commit for 2026-08-25 10:25:44 - style(theme): polish button styling and contras
 Commit for 2026-08-25 13:38:38 - feat(inventory): update stock item tracking
 Commit for 2026-08-26 12:01:29 - chore: cleanup unused imports and formatting
 Commit for 2026-08-26 13:49:21 - feat(inventory): update stock item tracking
+Commit for 2026-08-26 17:55:00 - style(theme): polish button styling and contrast
