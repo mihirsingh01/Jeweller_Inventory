@@ -745,3 +745,4 @@ Commit for 2026-08-26 17:55:00 - style(theme): polish button styling and contras
 Commit for 2026-08-26 18:26:04 - feat(reports): improve export formatting for audit log
 Commit for 2026-08-28 10:44:14 - chore: cleanup unused imports and formatting
 Commit for 2026-08-28 11:02:23 - feat(reports): improve export formatting for audit log
+Commit for 2026-08-28 14:04:26 - perf(stock): optimize queries and caching
