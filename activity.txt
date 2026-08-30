@@ -751,3 +751,4 @@ Commit for 2026-08-28 18:29:21 - Updates for 2026-08-28 18:29:21
 Commit for 2026-08-30 11:44:52 - Updates for 2026-08-30 11:44:52
 Commit for 2026-08-30 14:04:09 - fix(search): refine customer party search filter
 Commit for 2026-08-30 14:29:49 - chore: cleanup unused imports and formatting
+Commit for 2026-08-30 17:50:45 - refactor(ui): improve responsive layout and tables
