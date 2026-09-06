@@ -766,3 +766,4 @@ Commit for 2026-09-05 13:20:14 - Updates for 2026-09-05 13:20:14
 Commit for 2026-09-05 14:39:48 - Updates for 2026-09-05 14:39:48
 Commit for 2026-09-05 14:55:07 - test(vouchers): add test cases for entry posting
 Commit for 2026-09-06 11:24:33 - refactor(ui): improve responsive layout and tables
+Commit for 2026-09-06 13:22:11 - fix(search): refine customer party search filter
