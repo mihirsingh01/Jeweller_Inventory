@@ -776,3 +776,4 @@ Commit for 2026-09-07 16:24:08 - feat(billing): improve invoice item breakdown
 Commit for 2026-09-07 16:59:18 - docs(readme): update setup and architecture notes
 Commit for 2026-09-07 18:15:52 - Updates for 2026-09-07 18:15:52
 Commit for 2026-09-08 12:06:23 - Updates for 2026-09-08 12:06:23
+Commit for 2026-09-08 16:09:56 - refactor(ui): improve responsive layout and tables
