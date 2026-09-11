@@ -783,3 +783,4 @@ Commit for 2026-09-09 13:34:43 - refactor(components): extract reusable modal co
 Commit for 2026-09-09 18:06:15 - feat(rates): update daily gold and silver market rates
 Commit for 2026-09-09 18:45:11 - Updates for 2026-09-09 18:45:11
 Commit for 2026-09-11 09:20:16 - Updates for 2026-09-11 09:20:16
+Commit for 2026-09-11 14:27:45 - docs(readme): update setup and architecture notes
