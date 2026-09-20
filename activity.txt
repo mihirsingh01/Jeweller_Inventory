@@ -801,3 +801,4 @@ Commit for 2026-09-18 09:38:46 - feat(rates): update daily gold and silver marke
 Commit for 2026-09-18 11:07:26 - feat(billing): improve invoice item breakdown
 Commit for 2026-09-18 15:29:38 - fix(auth): handle session expiration and redirect
 Commit for 2026-09-18 18:19:05 - fix(ledger): adjust debit and credit balance calculation
+Commit for 2026-09-20 15:46:42 - refactor(ui): improve responsive layout and tables
