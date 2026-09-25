@@ -815,3 +815,4 @@ Commit for 2026-09-24 12:15:50 - fix(ledger): adjust debit and credit balance ca
 Commit for 2026-09-24 14:01:05 - chore: cleanup unused imports and formatting
 Commit for 2026-09-24 16:29:57 - Updates for 2026-09-24 16:29:57
 Commit for 2026-09-25 16:49:48 - Updates for 2026-09-25 16:49:48
+Commit for 2026-09-25 17:23:40 - feat(billing): improve invoice item breakdown
