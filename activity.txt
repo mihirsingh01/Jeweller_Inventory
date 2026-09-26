@@ -816,3 +816,4 @@ Commit for 2026-09-24 14:01:05 - chore: cleanup unused imports and formatting
 Commit for 2026-09-24 16:29:57 - Updates for 2026-09-24 16:29:57
 Commit for 2026-09-25 16:49:48 - Updates for 2026-09-25 16:49:48
 Commit for 2026-09-25 17:23:40 - feat(billing): improve invoice item breakdown
+Commit for 2026-09-26 17:18:27 - fix(auth): handle session expiration and redirect
