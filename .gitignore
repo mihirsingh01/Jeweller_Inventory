@@ -17,4 +17,6 @@ dist/
 coverage/
 .DS_Store
 PROMPT/
-*.tsbuildinfo
+*.tsbuildinfo
+.qodo/
+fill_history.py
