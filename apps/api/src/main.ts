@@ -11,8 +11,27 @@ async function bootstrap() {
   app.use(cookieParser());
   app.setGlobalPrefix('api/v1');
 
+  const configuredOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+    : ['http://localhost:3000', 'http://localhost:4000'];
+
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      try {
+        const url = new URL(origin);
+        if (
+          configuredOrigins.includes(origin) ||
+          url.hostname.endsWith('.vercel.app') ||
+          url.hostname === 'localhost'
+        ) {
+          return callback(null, true);
+        }
+      } catch {
+        // Ignored
+      }
+      return callback(null, true);
+    },
     credentials: true,
   });
 

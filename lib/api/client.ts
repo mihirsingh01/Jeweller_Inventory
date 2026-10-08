@@ -5,12 +5,46 @@ export class ApiError extends Error {
   }
 }
 
+function getApiBaseUrl(): string {
+  // 1. Server-side runtime (Next.js SSR / Server Actions / Route Handlers):
+  // Use Vercel internal service binding if injected
+  if (typeof window === 'undefined' && process.env.API_URL) {
+    const internalUrl = process.env.API_URL.replace(/\/$/, '');
+    return internalUrl.endsWith('/api/v1') ? internalUrl : `${internalUrl}/api/v1`;
+  }
+
+  // 2. Explicit public URL if configured
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    const publicUrl = process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, '');
+    return publicUrl.endsWith('/api/v1') ? publicUrl : `${publicUrl}/api/v1`;
+  }
+
+  // 3. Client-side on Vercel (same-origin relative URL routed via top-level rewrite)
+  if (typeof window !== 'undefined') {
+    return '/api/v1';
+  }
+
+  // 4. Fallback for local server-side dev
+  return 'http://localhost:4000/api/v1';
+}
+
+function buildApiUrl(endpoint: string): string {
+  const base = getApiBaseUrl().replace(/\/$/, '');
+  const cleanEndpoint = endpoint.replace(/^\//, '');
+
+  if (cleanEndpoint.startsWith('api/v1/')) {
+    const rootOrigin = base.replace(/\/api\/v1$/, '');
+    return `${rootOrigin}/${cleanEndpoint}`;
+  }
+
+  return `${base}/${cleanEndpoint}`;
+}
+
 export async function apiClient<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-  const url = `${baseUrl.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
+  const url = buildApiUrl(endpoint);
 
   const headers = new Headers(options.headers || {});
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {

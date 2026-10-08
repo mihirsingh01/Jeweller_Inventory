@@ -14,7 +14,8 @@ import {
   AuditLogItem,
 } from '../types';
 
-const API_BASE = (import.meta.env.VITE_API_URL || '') + '/api/v1';
+const rawBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE = rawBase ? (rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`) : '/api/v1';
 
 class ApiError extends Error {
   constructor(public status: number, message: string, public data?: any) {

@@ -233,7 +233,12 @@ export class BillRendererService {
     const payload = JSON.stringify({ saleId, exp: expiresTimestamp, sig: signature });
     const token = Buffer.from(payload).toString('base64url');
 
-    const baseUrl = process.env.PUBLIC_APP_URL || 'http://localhost:4000';
+    const baseUrl =
+      process.env.PUBLIC_APP_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : null) ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:4000');
     const url = `${baseUrl}/api/v1/sales/bill/media/${token}`;
 
     return { url, token, expiresAt };
