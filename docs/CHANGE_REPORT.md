@@ -125,27 +125,62 @@ TOTAL: 60 Tests Run, 60 Tests Passed, 0 Failures, 0 Skipped
 
 ## 5. Artifacts and Key Code Modifications
 
-1. **Database Migrations:**
-   - `001_initial_schema` (Baseline)
-   - `002_add_party_work_types` (`parties.work_types`)
-   - `003_add_item_code_and_units_and_idempotency` (`items.code`, `items.allowed_units`, `items.default_unit`, `idempotency_key`)
-   - `004_add_sales_charges_reminders_outbox` (`sales` charges columns, `payment_reminders`, `notification_outbox`)
-   - `005_add_purchases_charges_and_narration` (`purchases` charges columns, `narration`, `purchase_lines.unit`)
-   - `006_job_work_lines_and_sequence` (`job_work_seq`, `job_work_lines`, `entry_no`)
-   - `007_vouchers_notes_and_idempotency` (`money_vouchers.notes`, `idempotency_key`)
-   - `008_sales_orders_and_purchase_orders` (`sales_order_seq`, `purchase_order_seq`, `sales_orders`, `sales_order_lines`, `purchase_orders`, `purchase_order_lines`, and `order_id` foreign keys on `sales` and `purchases`)
-2. **Backend NestJS Modules:**
-   - Scoped queries and role-gating across `SalesService`, `PurchasesService`, `JobWorkService`, `VouchersService`, `RemindersService`, `WhatsAppService`, `OrdersService`, and `AuditService`.
-3. **Frontend Architecture & Components:**
-   - `components/ItemEntryGrid.tsx`: High-speed 2D keyboard navigation grid.
-   - `components/OrdersView.tsx`: Sales and Purchase orders tracking with "Convert to Bill".
-   - `components/RemindersView.tsx`: Payment reminders queue and Outbox delivery status table.
-   - `components/AuditLogView.tsx`: Filterable audit trail with JSON diff viewer.
-   - `components/NewSaleModal.tsx` & `components/NewPurchaseModal.tsx`: Complete transaction modals with live balance cards and charges breakdowns.
-   - `components/JobWorkModal.tsx`: Dual-mode Issue/Receive with shortage closure and labour charges.
-   - `components/VoucherModal.tsx`: Receipt and Payment vouchers with advance payment warnings and bill allocations.
-   - Shared Hooks: `useSaveShortcut.ts`, `useAltKeyShortcut.ts`, `useBackspaceNavigationGuard.ts`.
-   - Pure Calculations: `bill-totals.ts`, `voucher-calculations.ts`, `reminder-calculations.ts`, `whatsapp-share.ts`.
+### 5.1 Database Migrations in Order (with Rollback Steps)
+
+1. **`001_initial_schema` (Baseline Schema)**
+   - *Applied:* Baseline tables (`users`, `parties`, `items`, `sales`, `purchases`, `job_work_entries`, `money_vouchers`, `ledger_entries`, `stock_movements`, `audit_log`).
+   - *Rollback:* `DROP TABLE IF EXISTS audit_log, stock_movements, ledger_entries, voucher_allocations, money_vouchers, job_work_entries, purchase_lines, purchases, sale_lines, sales, bank_accounts, items, parties, users CASCADE;`
+2. **`002_add_party_work_types`**
+   - *Applied:* `ALTER TABLE parties ADD COLUMN IF NOT EXISTS work_types TEXT;`
+   - *Rollback:* `ALTER TABLE parties DROP COLUMN IF EXISTS work_types;`
+3. **`003_add_item_code_and_units_and_idempotency`**
+   - *Applied:* Added `code`, `allowed_units`, `default_unit` to `items`; added `idempotency_key UUID UNIQUE` to `sales` and `purchases`.
+   - *Rollback:* `ALTER TABLE items DROP COLUMN IF EXISTS code, DROP COLUMN IF EXISTS allowed_units, DROP COLUMN IF EXISTS default_unit; ALTER TABLE sales DROP COLUMN IF EXISTS idempotency_key; ALTER TABLE purchases DROP COLUMN IF EXISTS idempotency_key;`
+4. **`004_add_sales_charges_reminders_outbox`**
+   - *Applied:* Added charges columns to `sales`; created `payment_reminders` and `notification_outbox`.
+   - *Rollback:* `DROP TABLE IF EXISTS notification_outbox CASCADE; DROP TABLE IF EXISTS payment_reminders CASCADE; ALTER TABLE sales DROP COLUMN IF EXISTS discount_type, DROP COLUMN IF EXISTS discount_value, DROP COLUMN IF EXISTS discount_amount, DROP COLUMN IF EXISTS taxable_amount, DROP COLUMN IF EXISTS gst_rate, DROP COLUMN IF EXISTS gst_amount, DROP COLUMN IF EXISTS transport_charges, DROP COLUMN IF EXISTS packaging_charges, DROP COLUMN IF EXISTS other_charges, DROP COLUMN IF EXISTS round_off;`
+5. **`005_add_purchases_charges_and_narration`**
+   - *Applied:* Added charges columns and `narration TEXT` to `purchases`; added `unit` to `purchase_lines`.
+   - *Rollback:* `ALTER TABLE purchase_lines DROP COLUMN IF EXISTS unit; ALTER TABLE purchases DROP COLUMN IF EXISTS narration, DROP COLUMN IF EXISTS discount_type, DROP COLUMN IF EXISTS discount_value, DROP COLUMN IF EXISTS discount_amount, DROP COLUMN IF EXISTS taxable_amount, DROP COLUMN IF EXISTS gst_rate, DROP COLUMN IF EXISTS gst_amount, DROP COLUMN IF EXISTS transport_charges, DROP COLUMN IF EXISTS packaging_charges, DROP COLUMN IF EXISTS other_charges, DROP COLUMN IF EXISTS round_off;`
+6. **`006_job_work_lines_and_sequence`**
+   - *Applied:* Created sequence `job_work_seq`, added `entry_no`, `idempotency_key`, `issue_id` to `job_work_entries`, created table `job_work_lines`.
+   - *Rollback:* `DROP TABLE IF EXISTS job_work_lines CASCADE; ALTER TABLE job_work_entries DROP COLUMN IF EXISTS entry_no, DROP COLUMN IF EXISTS idempotency_key, DROP COLUMN IF EXISTS issue_id; DROP SEQUENCE IF EXISTS job_work_seq;`
+7. **`007_vouchers_notes_and_idempotency`**
+   - *Applied:* Added `notes TEXT` and `idempotency_key UUID UNIQUE` to `money_vouchers`.
+   - *Rollback:* `ALTER TABLE money_vouchers DROP COLUMN IF EXISTS notes, DROP COLUMN IF EXISTS idempotency_key;`
+8. **`008_sales_orders_and_purchase_orders`**
+   - *Applied:* Created sequences `sales_order_seq`, `purchase_order_seq`, tables `sales_orders`, `sales_order_lines`, `purchase_orders`, `purchase_order_lines`, and foreign keys `sales.order_id`, `purchases.order_id`.
+   - *Rollback:* `ALTER TABLE sales DROP COLUMN IF EXISTS order_id; ALTER TABLE purchases DROP COLUMN IF EXISTS order_id; DROP TABLE IF EXISTS purchase_order_lines CASCADE; DROP TABLE IF EXISTS purchase_orders CASCADE; DROP TABLE IF EXISTS sales_order_lines CASCADE; DROP TABLE IF EXISTS sales_orders CASCADE; DROP SEQUENCE IF EXISTS purchase_order_seq; DROP SEQUENCE IF EXISTS sales_order_seq;`
+
+---
+
+### 5.2 Required Environment Variables
+
+| Variable Name | Environment | Description | Default / Example |
+| :--- | :--- | :--- | :--- |
+| `DATABASE_URL` | Production / Backend | PostgreSQL connection URI | `postgres://user:pass@host:5432/kumkum_db` |
+| `JWT_SECRET` | Production / Backend | Secret key for signing server authentication tokens | *Cryptographically strong secret* |
+| `NEXT_PUBLIC_API_URL` | Frontend | URL of NestJS backend service | `http://localhost:3001` or `/api` |
+| `NEXT_PUBLIC_USE_MOCK` | Frontend | Toggle demo mock mode vs live NestJS backend | Set to `false` for production |
+| `WHATSAPP_PROVIDER` | Backend | Provider switch (`cloud_api` vs `mock`) | `cloud_api` |
+| `WHATSAPP_TOKEN` | Backend | Meta Cloud API System User Bearer token | `EAA...` (Meta permanent token) |
+| `WHATSAPP_PHONE_NUMBER_ID` | Backend | Meta WhatsApp Business phone number ID | `1029384756...` |
+| `OWNER_WHATSAPP` | Backend | Destination phone for owner entry alerts | `+919690000000` |
+
+---
+
+### 5.3 Remaining Limitations & Open Client Items
+
+1. **Meta WhatsApp API Credentials:** Live delivery requires Meta Cloud API credentials (`WHATSAPP_TOKEN` and `WHATSAPP_PHONE_NUMBER_ID`). The application seamlessly falls back to prefilled `wa.me` chat links and mobile Web Share when credentials are not configured.
+2. **Automated Cross-Party Postings (Req 35):** In accordance with the recommended decision, automatic supplier/artisan postings from customer receipts remain disabled to prevent unintended multi-party balance mutations until explicitly approved by the client.
+3. **Physical Receipt Printers:** Printing bills uses the browser print API (`window.print()`). Direct USB ESC/POS thermal printing requires an OS-level print service or QZ Tray plugin.
+
+---
+
+### 5.4 Items Explicitly Not Tested in Production
+
+- Live message delivery via Meta Graph API against real phone numbers (verified with MockWhatsAppProvider and `test/notifications-dispatch.test.ts`).
+- Production PostgreSQL connection failovers (verified locally via `withTransaction` rollback unit tests).
 
 ---
 
