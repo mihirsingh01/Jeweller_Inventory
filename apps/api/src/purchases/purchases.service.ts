@@ -223,8 +223,8 @@ export class PurchasesService {
         `INSERT INTO purchases (
            party_id, due_date, subtotal, discount_type, discount_value, discount_amount,
            taxable_amount, gst_rate, gst_amount, transport_charges, packaging_charges,
-           other_charges, round_off, total_amount, notes, narration, created_by, idempotency_key
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+           other_charges, round_off, total_amount, notes, narration, created_by, idempotency_key, order_id
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
          RETURNING *`,
         [
           dto.party_id,
@@ -245,9 +245,14 @@ export class PurchasesService {
           dto.narration || null,
           user.id,
           dto.idempotency_key || null,
+          dto.order_id || null,
         ],
       );
       const purchase = purchaseInsert.rows[0];
+
+      if (dto.order_id) {
+        await client.query(`UPDATE purchase_orders SET status = 'COMPLETED' WHERE id = $1`, [dto.order_id]);
+      }
 
       // 2. Insert Purchase Lines & 3. Stock Movements (positive delta for purchase)
       for (const line of dto.lines) {

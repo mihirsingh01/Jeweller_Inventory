@@ -80,3 +80,36 @@ export function formatVoucherShareMessage(params: VoucherShareParams): string {
   msg += `Warm regards,\n*${company}*`;
   return msg;
 }
+
+export interface OrderShareParams {
+  orderNo: number;
+  orderType: 'SO' | 'PO';
+  partyName?: string;
+  totalAmount: number;
+  expectedDeliveryDate?: string;
+  itemsSummary?: string;
+  companyName?: string;
+}
+
+export function formatOrderShareMessage(params: OrderShareParams): string {
+  const company = params.companyName || 'Kumkum Payal';
+  const party = params.partyName || 'Valued Partner';
+  const amountStr = `₹${params.totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
+  const title = params.orderType === 'SO' ? 'Sales Order Confirmation' : 'Purchase Order Booking';
+
+  let msg = `*${company} — ${title} #${params.orderNo}*\n\n`;
+  msg += `Namaste ${party},\n\n`;
+  msg += `Here are the details of your order:\n`;
+  msg += `• *Order No:* #${params.orderType}-${params.orderNo}\n`;
+  msg += `• *Order Value:* ${amountStr}\n`;
+  if (params.expectedDeliveryDate) {
+    msg += `• *Expected Delivery:* ${params.expectedDeliveryDate}\n`;
+  }
+  if (params.itemsSummary) {
+    msg += `• *Items:* ${params.itemsSummary}\n`;
+  }
+  msg += `\nPlease verify the specifications. For inquiries or updates, reply to this chat.\n\n`;
+  msg += `Warm regards,\n*${company}*`;
+  return msg;
+}
+

@@ -33,6 +33,7 @@ import { StockView } from '@/components/StockView';
 import { CashBankView } from '@/components/CashBankView';
 import { StaffManagementView } from '@/components/StaffManagementView';
 import { RemindersView } from '@/components/RemindersView';
+import { OrdersView } from '@/components/OrdersView';
 import { AuditLogView } from '@/components/AuditLogView';
 
 import { NewSaleModal } from '@/components/NewSaleModal';
@@ -43,6 +44,7 @@ import { VoucherModal } from '@/components/VoucherModal';
 const OWNER_NAV = [
   ['Dashboard', '⌂'],
   ['Entries', '↗'],
+  ['Orders', '📋'],
   ['Parties', '◉'],
   ['Stock', '◇'],
   ['Cash and Bank', '₹'],
@@ -54,6 +56,7 @@ const OWNER_NAV = [
 const STAFF_NAV = [
   ['Home', '⌂'],
   ['My Entries', '↗'],
+  ['Orders', '📋'],
   ['Reminders', '▣'],
 ];
 
@@ -261,6 +264,15 @@ export default function Page() {
             <RemindersView
               settings={reminderSettings}
               parties={parties}
+              role={role}
+              onRefresh={loadData}
+            />
+          )}
+
+          {active === 'Orders' && (
+            <OrdersView
+              parties={parties}
+              items={items}
               role={role}
               onRefresh={loadData}
             />

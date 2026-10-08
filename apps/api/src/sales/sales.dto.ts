@@ -52,6 +52,10 @@ export class CreateSaleDto {
 
   @IsOptional()
   @IsUUID()
+  order_id?: string;
+
+  @IsOptional()
+  @IsUUID()
   idempotency_key?: string;
 
   @IsOptional()

@@ -405,3 +405,85 @@ export interface DashboardStats {
     creator_name: string;
   }>;
 }
+
+export type OrderType = 'SO' | 'PO';
+export type OrderStatus = 'PENDING' | 'PARTIAL' | 'COMPLETED' | 'CANCELLED';
+
+export interface OrderLine {
+  id?: string;
+  order_id?: string;
+  item_id: string;
+  item_name?: string;
+  item_code?: string;
+  unit: 'PCS' | 'KG';
+  pieces?: number;
+  weight_kg?: number;
+  rate: number;
+  amount: number;
+  fulfilled_pieces?: number;
+  fulfilled_weight_kg?: number;
+}
+
+export interface OrderHeader {
+  id: string;
+  order_type?: OrderType;
+  order_no: number;
+  order_date: string;
+  party_id: string;
+  party_name?: string;
+  party_type?: PartyType;
+  party_phone?: string;
+  expected_delivery_date?: string;
+  status: OrderStatus;
+  subtotal: number;
+  taxable_amount: number;
+  gst_rate: number;
+  gst_amount: number;
+  round_off: number;
+  total_amount: number;
+  notes?: string;
+  idempotency_key?: string;
+  created_by: string;
+  creator_name?: string;
+  lines_count?: number;
+  lines?: OrderLine[];
+}
+
+export interface CreateOrderInput {
+  type: OrderType;
+  party_id: string;
+  expected_delivery_date?: string;
+  notes?: string;
+  idempotency_key?: string;
+  lines: Array<{
+    item_id: string;
+    unit: 'PCS' | 'KG';
+    pieces?: number;
+    weight_kg?: number;
+    rate: number;
+    amount: number;
+  }>;
+}
+
+export interface OrderConvertResult {
+  order_id: string;
+  order_no: number;
+  order_type: OrderType;
+  party_id: string;
+  party_name?: string;
+  party_type?: PartyType;
+  notes?: string;
+  prefilled_lines: Array<{
+    item_id: string;
+    item_name?: string;
+    item_code?: string;
+    unit: 'PCS' | 'KG';
+    pieces?: number;
+    weight_kg?: number;
+    rate: number;
+    amount: number;
+  }>;
+  subtotal: number;
+  total_amount: number;
+}
+

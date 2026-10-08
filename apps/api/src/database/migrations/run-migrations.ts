@@ -198,6 +198,92 @@ async function runMigrations() {
       console.log('✓ 007_vouchers_notes_and_idempotency has already been applied.');
     }
 
+    // Migration 008: Add sales_orders and purchase_orders schemas and link columns (Req 6, 7)
+    if (!appliedNames.has('008_sales_orders_and_purchase_orders')) {
+      console.log('Running migration: 008_sales_orders_and_purchase_orders...');
+      await pool.query(`
+        CREATE SEQUENCE IF NOT EXISTS sales_order_seq START WITH 5001;
+        CREATE SEQUENCE IF NOT EXISTS purchase_order_seq START WITH 5001;
+
+        CREATE TABLE IF NOT EXISTS sales_orders (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            order_no BIGINT NOT NULL DEFAULT nextval('sales_order_seq'),
+            party_id UUID NOT NULL REFERENCES parties(id),
+            order_date DATE NOT NULL DEFAULT CURRENT_DATE,
+            expected_delivery_date DATE,
+            status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PARTIAL', 'COMPLETED', 'CANCELLED')),
+            subtotal NUMERIC(14,2) NOT NULL DEFAULT 0,
+            taxable_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+            gst_rate NUMERIC(5,2) NOT NULL DEFAULT 3.0,
+            gst_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+            round_off NUMERIC(6,2) NOT NULL DEFAULT 0,
+            total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+            notes TEXT,
+            idempotency_key UUID UNIQUE,
+            created_by UUID NOT NULL REFERENCES users(id),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            is_deleted BOOLEAN NOT NULL DEFAULT false,
+            deleted_at TIMESTAMPTZ,
+            deleted_by UUID REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS sales_order_lines (
+            id BIGSERIAL PRIMARY KEY,
+            order_id UUID NOT NULL REFERENCES sales_orders(id) ON DELETE CASCADE,
+            item_id UUID NOT NULL REFERENCES items(id),
+            unit VARCHAR(10) NOT NULL DEFAULT 'KG' CHECK (unit IN ('PCS', 'KG')),
+            pieces INT,
+            weight_kg NUMERIC(12,3),
+            rate NUMERIC(14,2) NOT NULL,
+            amount NUMERIC(14,2) NOT NULL,
+            fulfilled_pieces INT NOT NULL DEFAULT 0,
+            fulfilled_weight_kg NUMERIC(12,3) NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS purchase_orders (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            order_no BIGINT NOT NULL DEFAULT nextval('purchase_order_seq'),
+            party_id UUID NOT NULL REFERENCES parties(id),
+            order_date DATE NOT NULL DEFAULT CURRENT_DATE,
+            expected_delivery_date DATE,
+            status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PARTIAL', 'COMPLETED', 'CANCELLED')),
+            subtotal NUMERIC(14,2) NOT NULL DEFAULT 0,
+            taxable_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+            gst_rate NUMERIC(5,2) NOT NULL DEFAULT 3.0,
+            gst_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+            round_off NUMERIC(6,2) NOT NULL DEFAULT 0,
+            total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+            notes TEXT,
+            idempotency_key UUID UNIQUE,
+            created_by UUID NOT NULL REFERENCES users(id),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            is_deleted BOOLEAN NOT NULL DEFAULT false,
+            deleted_at TIMESTAMPTZ,
+            deleted_by UUID REFERENCES users(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS purchase_order_lines (
+            id BIGSERIAL PRIMARY KEY,
+            order_id UUID NOT NULL REFERENCES purchase_orders(id) ON DELETE CASCADE,
+            item_id UUID NOT NULL REFERENCES items(id),
+            unit VARCHAR(10) NOT NULL DEFAULT 'KG' CHECK (unit IN ('PCS', 'KG')),
+            pieces INT,
+            weight_kg NUMERIC(12,3),
+            rate NUMERIC(14,2) NOT NULL,
+            amount NUMERIC(14,2) NOT NULL,
+            fulfilled_pieces INT NOT NULL DEFAULT 0,
+            fulfilled_weight_kg NUMERIC(12,3) NOT NULL DEFAULT 0
+        );
+
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS order_id UUID REFERENCES sales_orders(id);
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS order_id UUID REFERENCES purchase_orders(id);
+      `);
+      await pool.query('INSERT INTO _migrations (name) VALUES ($1)', ['008_sales_orders_and_purchase_orders']);
+      console.log('✓ 008_sales_orders_and_purchase_orders applied successfully.');
+    } else {
+      console.log('✓ 008_sales_orders_and_purchase_orders has already been applied.');
+    }
+
     console.log('All migrations completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);

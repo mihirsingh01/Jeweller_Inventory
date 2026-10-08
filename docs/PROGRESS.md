@@ -80,10 +80,15 @@ Running log for the implementation phases defined in `Claude.pdf`.
   - WhatsApp message formatting engine (`lib/calculations/whatsapp-share.ts`) with Indian phone normalization and encoded prefilled `wa.me` links.
   - One-click "📱 WhatsApp" share button in `AllEntriesView` with rich bill summary prefilling.
   - Automated unit test suite `test/notifications-dispatch.test.ts` (5/5 tests passing).
-- [ ] **Phase 11: Sales Orders and Purchase Orders** (Req 6, 7)
-  - Orders tables decoupled from financial ledger and stock.
-  - Statuses: Pending, Partially fulfilled, Completed, Cancelled.
-  - "Convert to Bill" flow prefilling pending quantities.
+- [x] **Phase 11: Sales Orders and Purchase Orders** (Req 6, 7)
+  - Database schema & migration `008_sales_orders_and_purchase_orders`: `sales_orders`, `sales_order_lines`, `purchase_orders`, `purchase_order_lines`, and foreign key `order_id` links on `sales` and `purchases`.
+  - Non-financial commitment invariant: Orders do not affect ledger entries or stock movements until conversion.
+  - Server-enforced staff isolation: staff see only own orders; cross-staff access returns 404 `NotFoundException`; owner-only soft delete.
+  - Backend NestJS Orders module (`apps/api/src/orders/`) with `findAll`, `findOne`, `create`, `convertToBill`, `updateStatus`, `softDelete`.
+  - Linked bill creation: `sales.order_id` and `purchases.order_id` with automatic status transition to `COMPLETED`.
+  - Frontend Orders view (`components/OrdersView.tsx`): SO and PO switcher, 4 KPI cards (Total, Pending, Value, Fulfilled), status filters, text search, fast-entry `ItemEntryGrid`, `Ctrl+S` shortcut, WhatsApp share, and "⚡ Convert to Bill" workflow.
+  - Added Orders tab to `OWNER_NAV` and `STAFF_NAV` in `app/page.tsx`.
+  - Automated unit test suite `test/orders-calculations.test.ts` (5/5 tests passing).
 - [ ] **Phase 12: Audit Log Verification, Acceptance Testing & Change Report** (Req 41, 50, 51, 52)
   - Comprehensive audit log filters and verification.
   - 14 acceptance test runs across Owner and Staff roles.
@@ -93,8 +98,8 @@ Running log for the implementation phases defined in `Claude.pdf`.
 ---
 
 ## Current Status
-- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder), Phase 6 (Purchase Bill with Accounts Payable, Narration, and Charges), Phase 7 (Job Work with Issue Grid, Linked Receive Lines, Difference Calculation, and Labour Charges), Phase 8 (Receipt and Payment Vouchers with Cash/Bank Books, Live Balances, and Advance Warnings), Phase 9 (Reminders Module Extension with Queue Table, KPI Cards, and Manual Creation), Phase 10 (Notifications and WhatsApp with Outbox Tracking, Retries, and One-Click Bill Sharing).
-- **Next Phase:** Phase 11 — Sales Orders and Purchase Orders (Req 6, 7).
+- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder), Phase 6 (Purchase Bill with Accounts Payable, Narration, and Charges), Phase 7 (Job Work with Issue Grid, Linked Receive Lines, Difference Calculation, and Labour Charges), Phase 8 (Receipt and Payment Vouchers with Cash/Bank Books, Live Balances, and Advance Warnings), Phase 9 (Reminders Module Extension with Queue Table, KPI Cards, and Manual Creation), Phase 10 (Notifications and WhatsApp with Outbox Tracking, Retries, and One-Click Bill Sharing), Phase 11 (Sales Orders and Purchase Orders with Decoupled Invariants and Convert to Bill Workflow).
+- **Next Phase:** Phase 12 — Audit Log Verification, Acceptance Testing & Change Report (Req 41, 50, 51, 52).
 
 
 

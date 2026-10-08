@@ -451,3 +451,97 @@ CREATE POLICY vouchers_staff_isolation_policy ON money_vouchers
         OR created_by = NULLIF(current_setting('app.current_user_id', true), '')::uuid
     );
 
+-- 14. Sales Orders and Purchase Orders (Req 6, 7 - Decoupled from financial ledger and stock)
+CREATE SEQUENCE IF NOT EXISTS sales_order_seq START WITH 5001;
+CREATE SEQUENCE IF NOT EXISTS purchase_order_seq START WITH 5001;
+
+CREATE TABLE IF NOT EXISTS sales_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_no BIGINT NOT NULL DEFAULT nextval('sales_order_seq'),
+    party_id UUID NOT NULL REFERENCES parties(id),
+    order_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    expected_delivery_date DATE,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PARTIAL', 'COMPLETED', 'CANCELLED')),
+    subtotal NUMERIC(14,2) NOT NULL DEFAULT 0,
+    taxable_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    gst_rate NUMERIC(5,2) NOT NULL DEFAULT 3.0,
+    gst_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    round_off NUMERIC(6,2) NOT NULL DEFAULT 0,
+    total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    notes TEXT,
+    idempotency_key UUID UNIQUE,
+    created_by UUID NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    is_deleted BOOLEAN NOT NULL DEFAULT false,
+    deleted_at TIMESTAMPTZ,
+    deleted_by UUID REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS sales_order_lines (
+    id BIGSERIAL PRIMARY KEY,
+    order_id UUID NOT NULL REFERENCES sales_orders(id) ON DELETE CASCADE,
+    item_id UUID NOT NULL REFERENCES items(id),
+    unit VARCHAR(10) NOT NULL DEFAULT 'KG' CHECK (unit IN ('PCS', 'KG')),
+    pieces INT,
+    weight_kg NUMERIC(12,3),
+    rate NUMERIC(14,2) NOT NULL,
+    amount NUMERIC(14,2) NOT NULL,
+    fulfilled_pieces INT NOT NULL DEFAULT 0,
+    fulfilled_weight_kg NUMERIC(12,3) NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS purchase_orders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_no BIGINT NOT NULL DEFAULT nextval('purchase_order_seq'),
+    party_id UUID NOT NULL REFERENCES parties(id),
+    order_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    expected_delivery_date DATE,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PARTIAL', 'COMPLETED', 'CANCELLED')),
+    subtotal NUMERIC(14,2) NOT NULL DEFAULT 0,
+    taxable_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    gst_rate NUMERIC(5,2) NOT NULL DEFAULT 3.0,
+    gst_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    round_off NUMERIC(6,2) NOT NULL DEFAULT 0,
+    total_amount NUMERIC(14,2) NOT NULL DEFAULT 0,
+    notes TEXT,
+    idempotency_key UUID UNIQUE,
+    created_by UUID NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    is_deleted BOOLEAN NOT NULL DEFAULT false,
+    deleted_at TIMESTAMPTZ,
+    deleted_by UUID REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS purchase_order_lines (
+    id BIGSERIAL PRIMARY KEY,
+    order_id UUID NOT NULL REFERENCES purchase_orders(id) ON DELETE CASCADE,
+    item_id UUID NOT NULL REFERENCES items(id),
+    unit VARCHAR(10) NOT NULL DEFAULT 'KG' CHECK (unit IN ('PCS', 'KG')),
+    pieces INT,
+    weight_kg NUMERIC(12,3),
+    rate NUMERIC(14,2) NOT NULL,
+    amount NUMERIC(14,2) NOT NULL,
+    fulfilled_pieces INT NOT NULL DEFAULT 0,
+    fulfilled_weight_kg NUMERIC(12,3) NOT NULL DEFAULT 0
+);
+
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS order_id UUID REFERENCES sales_orders(id);
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS order_id UUID REFERENCES purchase_orders(id);
+
+ALTER TABLE sales_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY sales_orders_staff_isolation_policy ON sales_orders
+    FOR ALL
+    USING (
+        current_setting('app.current_role', true) = 'OWNER' 
+        OR created_by = NULLIF(current_setting('app.current_user_id', true), '')::uuid
+    );
+
+ALTER TABLE purchase_orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY purchase_orders_staff_isolation_policy ON purchase_orders
+    FOR ALL
+    USING (
+        current_setting('app.current_role', true) = 'OWNER' 
+        OR created_by = NULLIF(current_setting('app.current_user_id', true), '')::uuid
+    );
+
+

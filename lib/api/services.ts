@@ -16,6 +16,12 @@ import {
   CreateItemDto,
   AdjustStockDto,
   StockMovement,
+  OrderHeader,
+  OrderLine,
+  CreateOrderInput,
+  OrderConvertResult,
+  OrderType,
+  OrderStatus,
 } from './types';
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== 'false';
@@ -161,6 +167,81 @@ let mockOutbox: NotificationOutboxRow[] = [
 let mockAuditLogs: AuditLogRow[] = [
   { id: 101, actor_id: 'u1', actor_name: 'Mihir Sharma', action: 'CREATE', table_name: 'users', record_id: 'u2', after_data: { username: 'amit', role: 'STAFF' }, at: '2026-09-05T10:00:00Z' },
   { id: 102, actor_id: 'u1', actor_name: 'Mihir Sharma', action: 'UPDATE_SETTINGS', table_name: 'reminder_settings', record_id: '1', before_data: { repeat_days: 5 }, after_data: { repeat_days: 3 }, at: '2026-09-20T12:00:00Z' },
+];
+
+let mockOrders: OrderHeader[] = [
+  {
+    id: 'so-101',
+    order_type: 'SO',
+    order_no: 101,
+    order_date: '2026-10-02T11:00:00Z',
+    party_id: 'p1',
+    party_name: 'Rajasthan Jewellers',
+    party_type: 'CUSTOMER',
+    party_phone: '+919829012345',
+    expected_delivery_date: '2026-10-15',
+    status: 'PENDING',
+    subtotal: 154000,
+    taxable_amount: 154000,
+    gst_rate: 3,
+    gst_amount: 4620,
+    round_off: 0,
+    total_amount: 158620,
+    notes: 'Advance booking for Diwali festive collection',
+    created_by: 'u1',
+    creator_name: 'Mihir Sharma',
+    lines_count: 1,
+    lines: [
+      {
+        id: 'sol-1',
+        order_id: 'so-101',
+        item_id: 'i1',
+        item_name: 'Gold 22K Plain Bangles',
+        item_code: 'GO22',
+        unit: 'KG',
+        weight_kg: 0.020,
+        rate: 7700000,
+        amount: 154000,
+        fulfilled_weight_kg: 0,
+      },
+    ],
+  },
+  {
+    id: 'po-201',
+    order_type: 'PO',
+    order_no: 201,
+    order_date: '2026-10-03T14:30:00Z',
+    party_id: 'p2',
+    party_name: 'Mehta Gold Works',
+    party_type: 'SUPPLIER',
+    party_phone: '+919829054321',
+    expected_delivery_date: '2026-10-12',
+    status: 'PENDING',
+    subtotal: 75000,
+    taxable_amount: 75000,
+    gst_rate: 3,
+    gst_amount: 2250,
+    round_off: 0,
+    total_amount: 77250,
+    notes: 'Raw silver ingot order 1kg',
+    created_by: 'u1',
+    creator_name: 'Mihir Sharma',
+    lines_count: 1,
+    lines: [
+      {
+        id: 'pol-1',
+        order_id: 'po-201',
+        item_id: 'i2',
+        item_name: 'Silver Traditional Payal 92.5',
+        item_code: 'SP92',
+        unit: 'KG',
+        weight_kg: 1.000,
+        rate: 75000,
+        amount: 75000,
+        fulfilled_weight_kg: 0,
+      },
+    ],
+  },
 ];
 
 // --- Services ---
@@ -962,3 +1043,188 @@ export async function processOutbox(): Promise<any> {
   }
   return apiClient('/whatsapp/outbox/process', { method: 'POST' });
 }
+
+// --- Sales Orders & Purchase Orders (Req 6, 7) ---
+
+export async function listOrders(
+  type: OrderType,
+  status?: string,
+  partyId?: string,
+): Promise<OrderHeader[]> {
+  if (USE_MOCK) {
+    return mockOrders.filter((o) => {
+      if (o.order_type !== type && !o.id.toLowerCase().startsWith(type.toLowerCase())) return false;
+      if (status && o.status !== status) return false;
+      if (partyId && o.party_id !== partyId) return false;
+      return true;
+    });
+  }
+  const params = new URLSearchParams();
+  params.set('type', type);
+  if (status) params.set('status', status);
+  if (partyId) params.set('party_id', partyId);
+  return apiClient<OrderHeader[]>(`/orders?${params.toString()}`);
+}
+
+export async function getOrder(id: string, type: OrderType): Promise<OrderHeader> {
+  if (USE_MOCK) {
+    const order = mockOrders.find((o) => o.id === id);
+    if (!order) throw new Error(`${type === 'SO' ? 'Sales' : 'Purchase'} order not found`);
+    return order;
+  }
+  return apiClient<OrderHeader>(`/orders/${id}?type=${type}`);
+}
+
+export async function createOrder(dto: CreateOrderInput): Promise<OrderHeader> {
+  if (USE_MOCK) {
+    const party = mockParties.find((p) => p.id === dto.party_id);
+    let subtotalPaise = 0;
+    const lines: OrderLine[] = dto.lines.map((l, idx) => {
+      const item = mockItems.find((i) => i.id === l.item_id);
+      const lineAmtPaise = Math.round(Number(l.amount || 0) * 100);
+      subtotalPaise += lineAmtPaise;
+      return {
+        id: `line_${Date.now()}_${idx}`,
+        item_id: l.item_id,
+        item_name: item?.name || 'Item',
+        item_code: item?.code,
+        unit: l.unit,
+        pieces: l.pieces,
+        weight_kg: l.weight_kg,
+        rate: l.rate,
+        amount: l.amount,
+        fulfilled_pieces: 0,
+        fulfilled_weight_kg: 0,
+      };
+    });
+
+    const gstRate = 3.0;
+    const gstPaise = Math.round((subtotalPaise * gstRate) / 100);
+    const exactTotalPaise = subtotalPaise + gstPaise;
+    const roundedTotalPaise = Math.round(exactTotalPaise / 100) * 100;
+    const roundOffPaise = roundedTotalPaise - exactTotalPaise;
+
+    const newOrder: OrderHeader = {
+      id: `${dto.type.toLowerCase()}-${Date.now()}`,
+      order_type: dto.type,
+      order_no: mockOrders.filter((o) => o.order_type === dto.type).length + 101,
+      order_date: new Date().toISOString(),
+      party_id: dto.party_id,
+      party_name: party?.name,
+      party_type: party?.type,
+      party_phone: party?.whatsapp_number,
+      expected_delivery_date: dto.expected_delivery_date,
+      status: 'PENDING',
+      subtotal: subtotalPaise / 100,
+      taxable_amount: subtotalPaise / 100,
+      gst_rate: gstRate,
+      gst_amount: gstPaise / 100,
+      round_off: roundOffPaise / 100,
+      total_amount: roundedTotalPaise / 100,
+      notes: dto.notes,
+      idempotency_key: dto.idempotency_key,
+      created_by: 'u1',
+      creator_name: 'Mihir Sharma',
+      lines_count: lines.length,
+      lines,
+    };
+
+    mockOrders.unshift(newOrder);
+
+    mockAuditLogs.unshift({
+      id: Date.now(),
+      actor_id: 'u1',
+      actor_name: 'Mihir Sharma',
+      action: 'CREATE',
+      table_name: dto.type === 'SO' ? 'sales_orders' : 'purchase_orders',
+      record_id: newOrder.id,
+      after_data: newOrder,
+      at: new Date().toISOString(),
+    });
+
+    return newOrder;
+  }
+  return apiClient<OrderHeader>('/orders', {
+    method: 'POST',
+    body: JSON.stringify(dto),
+  });
+}
+
+export async function convertOrderToBill(id: string, type: OrderType): Promise<OrderConvertResult> {
+  if (USE_MOCK) {
+    const order = mockOrders.find((o) => o.id === id);
+    if (!order) throw new Error('Order not found');
+    if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
+      throw new Error(`Order is already ${order.status}`);
+    }
+
+    const prefilledLines = (order.lines || []).map((l) => {
+      const pendingPieces = l.unit === 'PCS' ? Math.max(0, (l.pieces || 0) - (l.fulfilled_pieces || 0)) : undefined;
+      const pendingWeight = l.unit === 'KG' ? Math.max(0, Number(l.weight_kg || 0) - Number(l.fulfilled_weight_kg || 0)) : undefined;
+      const amount = l.unit === 'PCS'
+        ? Math.round((pendingPieces || 0) * l.rate * 100) / 100
+        : Math.round((pendingWeight || 0) * l.rate * 100) / 100;
+      return {
+        item_id: l.item_id,
+        item_name: l.item_name,
+        item_code: l.item_code,
+        unit: l.unit,
+        pieces: pendingPieces,
+        weight_kg: pendingWeight,
+        rate: l.rate,
+        amount,
+      };
+    });
+
+    order.status = 'COMPLETED';
+
+    return {
+      order_id: order.id,
+      order_no: order.order_no,
+      order_type: type,
+      party_id: order.party_id,
+      party_name: order.party_name,
+      party_type: order.party_type,
+      notes: `Converted from ${type} #${order.order_no}. ${order.notes || ''}`.trim(),
+      prefilled_lines: prefilledLines,
+      subtotal: order.subtotal,
+      total_amount: order.total_amount,
+    };
+  }
+  return apiClient<OrderConvertResult>(`/orders/${id}/convert?type=${type}`, { method: 'POST' });
+}
+
+export async function updateOrderStatus(
+  id: string,
+  type: OrderType,
+  status: OrderStatus,
+): Promise<OrderHeader> {
+  if (USE_MOCK) {
+    const order = mockOrders.find((o) => o.id === id);
+    if (!order) throw new Error('Order not found');
+    order.status = status;
+    return order;
+  }
+  return apiClient<OrderHeader>(`/orders/${id}/status?type=${type}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function deleteOrder(
+  id: string,
+  type: OrderType,
+): Promise<{ success: boolean; message: string }> {
+  if (USE_MOCK) {
+    const idx = mockOrders.findIndex((o) => o.id === id);
+    if (idx >= 0) {
+      mockOrders.splice(idx, 1);
+      return { success: true, message: `${type === 'SO' ? 'Sales' : 'Purchase'} order deleted` };
+    }
+    throw new Error('Order not found');
+  }
+  return apiClient<{ success: boolean; message: string }>(`/orders/${id}?type=${type}`, {
+    method: 'DELETE',
+  });
+}
+

@@ -14,6 +14,7 @@ import { AuditModule } from './audit/audit.module';
 import { WhatsAppModule } from './whatsapp/whatsapp.module';
 import { BillingModule } from './billing/billing.module';
 import { RemindersModule } from './reminders/reminders.module';
+import { OrdersModule } from './orders/orders.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { HealthController } from './health/health.controller';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -38,6 +39,7 @@ import { SanitizeInputInterceptor } from './common/interceptors/sanitize-input.i
     WhatsAppModule,
     BillingModule,
     RemindersModule,
+    OrdersModule,
     DashboardModule,
   ],
   controllers: [HealthController],
