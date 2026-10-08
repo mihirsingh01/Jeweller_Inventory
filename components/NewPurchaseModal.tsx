@@ -39,7 +39,7 @@ export function NewPurchaseModal({ isOpen, onClose, parties, items, onPurchaseCr
   const [gridSubtotal, setGridSubtotal] = useState<number>(0);
 
   // Charges & Discounts (Req 22, 15)
-  const [discountType, setDiscountType] = useState<'PERCENT' | 'FIXED'>('PERCENT');
+  const [discountType, setDiscountType] = useState<'AMOUNT' | 'PERCENT'>('PERCENT');
   const [discountValue, setDiscountValue] = useState<number>(0);
   const [gstRate, setGstRate] = useState<number>(3.0);
   const [transportCharges, setTransportCharges] = useState<number>(0);
@@ -456,7 +456,7 @@ export function NewPurchaseModal({ isOpen, onClose, parties, items, onPurchaseCr
                       <button
                         type="button"
                         style={{ fontSize: 10, background: '#E2E8F0', border: 'none', borderRadius: 3, padding: '1px 5px', cursor: 'pointer' }}
-                        onClick={() => setDiscountType(discountType === 'PERCENT' ? 'FIXED' : 'PERCENT')}
+                        onClick={() => setDiscountType(discountType === 'PERCENT' ? 'AMOUNT' : 'PERCENT')}
                       >
                         {discountType === 'PERCENT' ? '% Percent' : '₹ Amount'}
                       </button>

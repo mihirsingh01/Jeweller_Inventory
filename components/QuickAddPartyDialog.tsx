@@ -7,8 +7,10 @@ import { createParty } from '@/lib/api/services';
 interface QuickAddPartyDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'CUSTOMER' | 'SUPPLIER' | 'KARIGAR';
-  onSuccess: (newParty: Party) => void;
+  type?: 'CUSTOMER' | 'SUPPLIER' | 'KARIGAR';
+  initialType?: 'CUSTOMER' | 'SUPPLIER' | 'KARIGAR';
+  onSuccess?: (newParty: Party) => void;
+  onPartyCreated?: (newParty: Party) => void;
   targetFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
@@ -16,9 +18,12 @@ export function QuickAddPartyDialog({
   isOpen,
   onClose,
   type,
+  initialType,
   onSuccess,
+  onPartyCreated,
   targetFocusRef,
 }: QuickAddPartyDialogProps) {
+  const effectiveType = initialType || type || 'CUSTOMER';
   const [name, setName] = useState('');
   const [mobile, setMobile] = useState('');
   const [address, setAddress] = useState('');
@@ -46,13 +51,13 @@ export function QuickAddPartyDialog({
   if (!isOpen) return null;
 
   const title =
-    type === 'CUSTOMER'
+    effectiveType === 'CUSTOMER'
       ? 'Add Customer (Alt+C)'
-      : type === 'SUPPLIER'
+      : effectiveType === 'SUPPLIER'
       ? 'Add Supplier (Alt+S)'
       : 'Add Karigar (Alt+K)';
 
-  const apiPartyType = type === 'SUPPLIER' ? 'SUPPLIER' : type === 'KARIGAR' ? 'BOTH' : 'CUSTOMER';
+  const apiPartyType = effectiveType === 'SUPPLIER' ? 'SUPPLIER' : effectiveType === 'KARIGAR' ? 'BOTH' : 'CUSTOMER';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,11 +75,12 @@ export function QuickAddPartyDialog({
         type: apiPartyType,
         whatsapp_number: mobile.trim() ? mobile.trim() : undefined,
         address: address.trim() || undefined,
-        work_types: type === 'KARIGAR' ? workTypes.join(', ') : undefined,
+        work_types: effectiveType === 'KARIGAR' ? workTypes.join(', ') : undefined,
         opening_balance: openingBalance || 0,
       });
 
-      onSuccess(created);
+      onSuccess?.(created);
+      onPartyCreated?.(created);
       onClose();
 
       // Shift focus to the next field in the host form

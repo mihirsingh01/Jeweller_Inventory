@@ -40,8 +40,8 @@ export function VoucherModal({
       });
     } else {
       return [...parties].sort((a, b) => {
-        const aIsPayable = a.type === 'SUPPLIER' || a.type === 'KARIGAR';
-        const bIsPayable = b.type === 'SUPPLIER' || b.type === 'KARIGAR';
+        const aIsPayable = a.type === 'SUPPLIER' || a.type === 'BOTH' || (a.type as string) === 'KARIGAR';
+        const bIsPayable = b.type === 'SUPPLIER' || b.type === 'BOTH' || (b.type as string) === 'KARIGAR';
         if (aIsPayable && !bIsPayable) return -1;
         if (!aIsPayable && bIsPayable) return 1;
         return a.name.localeCompare(b.name);
@@ -782,7 +782,7 @@ export function VoucherModal({
           isOpen={true}
           initialType={quickAddType}
           onClose={() => setQuickAddType(null)}
-          onPartyCreated={(newParty) => {
+          onPartyCreated={(newParty: Party) => {
             setPartyId(newParty.id);
             setQuickAddType(null);
             onVoucherCreated();

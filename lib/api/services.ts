@@ -22,6 +22,7 @@ import {
   OrderConvertResult,
   OrderType,
   OrderStatus,
+  PendingJobWorkLine,
 } from './types';
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== 'false';

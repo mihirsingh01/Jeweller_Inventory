@@ -84,10 +84,11 @@ describe('Entries, Atomic Transactions, Ledger & Stock Tests', () => {
         ],
       };
 
-      // Mock available stock: only 2 pieces and 0.1 Kg available
+      // Mock party, item, and available stock: only 2 pieces and 0.1 Kg available
       mockClient.query
-        .mockResolvedValueOnce({ rows: [{ stock_pieces: 2, stock_kg: 0.1 }] }) // stock query
-        .mockResolvedValueOnce({ rows: [{ is_active: true }] }); // settings
+        .mockResolvedValueOnce({ rows: [{ id: 'party-1', name: 'Party 1' }] }) // party query
+        .mockResolvedValueOnce({ rows: [{ id: 'item-gold', name: 'Gold Item', allowed_units: 'BOTH', default_unit: 'PCS' }] }) // item query
+        .mockResolvedValueOnce({ rows: [{ stock_pieces: 2, stock_kg: 0.1 }] }); // stock query
 
       await expect(salesService.create(saleDto, staffUser)).rejects.toThrow(BadRequestException);
     });
@@ -98,19 +99,23 @@ describe('Entries, Atomic Transactions, Ledger & Stock Tests', () => {
       const saleDto = {
         party_id: 'cust-123',
         due_date: '2026-10-20',
+        gst_rate: 0,
         lines: [
-          { item_id: 'item-silver', pieces: 5, weight_kg: 1.25, rate: 80000 },
+          { item_id: 'item-silver', unit: 'KG' as const, pieces: 5, weight_kg: 1.25, rate: 80000 },
         ],
       };
 
       // 1. Stock check: ample stock
       mockClient.query
+        .mockResolvedValueOnce({ rows: [{ id: 'cust-123', name: 'Rajasthan Jewellers', whatsapp_number: '+919876543210' }] }) // party check
+        .mockResolvedValueOnce({ rows: [{ id: 'item-silver', name: 'Silver Item', allowed_units: 'BOTH', default_unit: 'KG' }] }) // item check
         .mockResolvedValueOnce({ rows: [{ stock_pieces: 100, stock_kg: 50.0 }] }) // stock check
-        .mockResolvedValueOnce({ rows: [{ is_active: true }] }) // settings check
         .mockResolvedValueOnce({ rows: [{ id: 'sale-999', bill_no: 1005, party_id: 'cust-123', total_amount: 100000 }] }) // sale insert
         .mockResolvedValueOnce({ rows: [] }) // line insert
         .mockResolvedValueOnce({ rows: [] }) // stock movement insert
-        .mockResolvedValueOnce({ rows: [] }); // ledger insert
+        .mockResolvedValueOnce({ rows: [] }) // ledger insert
+        .mockResolvedValueOnce({ rows: [] }) // audit log insert
+        .mockResolvedValueOnce({ rows: [] }); // notification outbox insert
 
       const result = await salesService.create(saleDto, staffUser);
 
@@ -166,7 +171,7 @@ describe('Entries, Atomic Transactions, Ledger & Stock Tests', () => {
         ],
       });
 
-      await expect(salesService.findOne('sale-other', staffUser)).rejects.toThrow(ForbiddenException);
+      await expect(salesService.findOne('sale-other', staffUser)).rejects.toThrow(NotFoundException);
     });
 
     it('STAFF cannot edit or delete entries (Owner only)', async () => {
@@ -246,7 +251,7 @@ describe('Entries, Atomic Transactions, Ledger & Stock Tests', () => {
         call[0].includes('INSERT INTO stock_movements') && call[1]?.[1] === 'POLISH_ISSUE',
       );
       expect(stockCall).toBeDefined();
-      expect(stockCall[1][3]).toBe(-2.5); // negative kg delta
+      expect(stockCall[1][4]).toBe(-2.5); // negative kg delta
     });
   });
 });

@@ -4,7 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const cookieParser = require('cookie-parser');
+const cookieParser: any = require('cookie-parser');
 
 async function bootstrap() {
   const logger = new Logger('KumkumPayalBootstrap');

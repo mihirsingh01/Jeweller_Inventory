@@ -42,6 +42,8 @@ export interface CalculatedBillTotals {
   grandTotal: number;
 }
 
+export type BillTotals = CalculatedBillTotals;
+
 export function calculateBillTotals(input: CalculateBillChargesInput): CalculatedBillTotals {
   const subtotalPaise = Math.max(0, Math.round((Number(input.subtotal) || 0) * 100));
   const discountType = input.discountType === 'PERCENT' ? 'PERCENT' : 'AMOUNT';

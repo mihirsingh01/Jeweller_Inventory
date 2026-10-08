@@ -19,11 +19,15 @@ interface UseBackspaceNavigationGuardOptions {
  * - Suppressed on root dashboard ('/').
  * - Prompts confirmation if form has unsaved data (isDirty).
  */
-export function useBackspaceNavigationGuard({
-  isDirty = false,
-  isDialogOpen = false,
-  onBack,
-}: UseBackspaceNavigationGuardOptions = {}) {
+export function useBackspaceNavigationGuard(
+  optionsOrDialogOpen: UseBackspaceNavigationGuardOptions | boolean = {},
+) {
+  const options =
+    typeof optionsOrDialogOpen === 'boolean'
+      ? { isDialogOpen: optionsOrDialogOpen }
+      : optionsOrDialogOpen;
+
+  const { isDirty = false, isDialogOpen = false, onBack } = options;
   const pathname = usePathname();
   const router = useRouter();
 

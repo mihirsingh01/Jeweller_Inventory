@@ -5,7 +5,7 @@
 
 export interface VoucherLedgerImpactInput {
   kind: 'RECEIPT' | 'PAYMENT';
-  partyType?: 'CUSTOMER' | 'SUPPLIER' | 'KARIGAR';
+  partyType?: 'CUSTOMER' | 'SUPPLIER' | 'KARIGAR' | 'BOTH';
   currentBalance: number; // In rupees
   amount: number; // In rupees
 }

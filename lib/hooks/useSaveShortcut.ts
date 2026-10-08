@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 
-interface UseSaveShortcutOptions {
-  onSave: () => void | Promise<void>;
-  isSaving: boolean;
+export interface UseSaveShortcutOptions {
+  onSave?: () => void | Promise<void>;
+  isSaving?: boolean;
+  isSubmitting?: boolean;
   enabled?: boolean;
 }
 
@@ -20,11 +21,24 @@ interface UseSaveShortcutReturn {
  * - Enforces in-flight locking: duplicate keypresses while isSaving=true are discarded
  * - Manages UUID idempotency_key for safe double-submit prevention
  */
-export function useSaveShortcut({
-  onSave,
-  isSaving,
-  enabled = true,
-}: UseSaveShortcutOptions): UseSaveShortcutReturn {
+export function useSaveShortcut(
+  optionsOrHandler: UseSaveShortcutOptions | (() => void | Promise<void>),
+  enabledArg?: boolean,
+): UseSaveShortcutReturn {
+  let onSave: () => void | Promise<void> = () => {};
+  let isSaving = false;
+  let enabled = true;
+
+  if (typeof optionsOrHandler === 'function') {
+    onSave = optionsOrHandler;
+    if (enabledArg !== undefined) {
+      enabled = enabledArg;
+    }
+  } else if (optionsOrHandler) {
+    onSave = optionsOrHandler.onSave || (() => {});
+    isSaving = !!(optionsOrHandler.isSaving || optionsOrHandler.isSubmitting);
+    enabled = optionsOrHandler.enabled !== undefined ? optionsOrHandler.enabled : true;
+  }
   // Generate initial UUID for idempotency
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {

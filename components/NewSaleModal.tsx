@@ -280,25 +280,25 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
               {Number(successSale.discount_amount) > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, color: '#059669' }}>
                   <span>Discount:</span>
-                  <span>- {formatRupee(successSale.discount_amount)}</span>
+                  <span>- {formatRupee(successSale.discount_amount || 0)}</span>
                 </div>
               )}
               {Number(successSale.gst_amount) > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span style={{ color: '#7A7268' }}>GST ({successSale.gst_rate}%):</span>
-                  <span>+ {formatRupee(successSale.gst_amount)}</span>
+                  <span>+ {formatRupee(successSale.gst_amount || 0)}</span>
                 </div>
               )}
               {Number(successSale.transport_charges) > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span style={{ color: '#7A7268' }}>Transport Charges:</span>
-                  <span>+ {formatRupee(successSale.transport_charges)}</span>
+                  <span>+ {formatRupee(successSale.transport_charges || 0)}</span>
                 </div>
               )}
-              {Number(successSale.round_off) !== 0 && (
+              {Number(successSale.round_off || 0) !== 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                   <span style={{ color: '#7A7268' }}>Round Off:</span>
-                  <span>{successSale.round_off > 0 ? `+ ${formatRupee(successSale.round_off)}` : `- ${formatRupee(Math.abs(successSale.round_off))}`}</span>
+                  <span>{(successSale.round_off || 0) > 0 ? `+ ${formatRupee(successSale.round_off || 0)}` : `- ${formatRupee(Math.abs(successSale.round_off || 0))}`}</span>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #E9E0D7', paddingTop: 6, fontSize: 14, fontWeight: 700, color: '#9B1C31' }}>

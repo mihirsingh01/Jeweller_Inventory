@@ -27,6 +27,9 @@ async function runMigrations() {
       );
     `);
 
+    const { rows: appliedRows } = await pool.query<{ name: string }>('SELECT name FROM _migrations');
+    const appliedNames = new Set(appliedRows.map((r) => r.name));
+
     // Look for init.sql
     const initSqlPath = path.resolve(__dirname, '../../../../infra/postgres/init.sql');
     if (fs.existsSync(initSqlPath)) {

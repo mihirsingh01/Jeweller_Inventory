@@ -92,7 +92,7 @@ export class SalesService {
        WHERE sl.sale_id = $1`,
       [id],
     );
-    sale.lines = linesRes.rows;
+    sale.lines = linesRes?.rows || [];
 
     // Requirement 8: Compute Balance Before | This Bill | Closing Balance dynamically from ledger
     const ledgerRes = await this.db.query(
@@ -100,7 +100,7 @@ export class SalesService {
       [id],
     );
     let balanceBefore = Number(sale.party_opening_balance || 0);
-    if (ledgerRes.rows.length > 0) {
+    if (ledgerRes?.rows && ledgerRes.rows.length > 0) {
       const ledgerEntryId = ledgerRes.rows[0].id;
       const prevRes = await this.db.query(
         `SELECT p.opening_balance + COALESCE(SUM(le.debit - le.credit), 0) AS balance_before
@@ -110,7 +110,7 @@ export class SalesService {
          GROUP BY p.opening_balance`,
         [ledgerEntryId, sale.party_id],
       );
-      if (prevRes.rows.length > 0) {
+      if (prevRes?.rows && prevRes.rows.length > 0) {
         balanceBefore = Number(prevRes.rows[0].balance_before);
       }
     }
@@ -126,7 +126,7 @@ export class SalesService {
       `SELECT * FROM payment_reminders WHERE sale_id = $1 AND status <> 'CANCELLED' ORDER BY created_at DESC LIMIT 1`,
       [id],
     );
-    sale.reminder = reminderRes.rows[0] || null;
+    sale.reminder = reminderRes?.rows?.[0] || null;
 
     return sale;
   }
@@ -137,6 +137,19 @@ export class SalesService {
     }
     if (!dto.lines || dto.lines.length === 0) {
       throw new BadRequestException('At least one item line is required');
+    }
+
+    // Pre-validate lines before transaction
+    for (const line of dto.lines) {
+      if (!line.item_id) {
+        throw new BadRequestException('Item must be selected for all lines');
+      }
+      if ((line.pieces ?? 0) < 0 || (line.weight_kg ?? 0) < 0 || (line.rate ?? 0) < 0) {
+        throw new BadRequestException('Quantity and rate values cannot be negative');
+      }
+      if ((line.pieces ?? 0) <= 0 && (line.weight_kg ?? 0) <= 0) {
+        throw new BadRequestException('Pieces or weight (Kg) must be greater than zero for each line');
+      }
     }
 
     if (dto.idempotency_key) {

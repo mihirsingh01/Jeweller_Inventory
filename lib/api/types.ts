@@ -283,7 +283,7 @@ export interface MoneyVoucher {
   kind: 'RECEIPT' | 'PAYMENT';
   party_id: string;
   party_name?: string;
-  party_type?: 'CUSTOMER' | 'SUPPLIER' | 'KARIGAR';
+  party_type?: PartyType | 'KARIGAR';
   mode: PayMode;
   bank_account_id?: string;
   bank_name?: string;
@@ -331,7 +331,7 @@ export interface PaymentReminder {
   id: string;
   party_id: string;
   party_name?: string;
-  party_type?: 'CUSTOMER' | 'SUPPLIER' | 'KARIGAR';
+  party_type?: PartyType | 'KARIGAR';
   party_phone?: string;
   sale_id?: string;
   sale_bill_no?: number;

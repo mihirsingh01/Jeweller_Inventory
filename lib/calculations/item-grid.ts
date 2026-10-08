@@ -36,10 +36,24 @@ export interface GridTotals {
   validLineCount: number;
 }
 
+export interface GridLineLike {
+  id?: string;
+  item_id?: string;
+  item_name?: string;
+  item_code?: string;
+  unit?: 'PCS' | 'KG';
+  pieces?: number | '' | null;
+  weight_kg?: number | '' | null;
+  rate?: number | '' | null;
+  amount?: number;
+  isValid?: boolean;
+  error?: string;
+}
+
 /**
  * Computes grid totals across all line items using integer accumulators.
  */
-export function calculateGridTotals(lines: Array<Partial<GridLineItem>>): GridTotals {
+export function calculateGridTotals(lines: Array<GridLineLike>): GridTotals {
   let subtotalPaise = 0;
   let totalPieces = 0;
   let totalWeightGrams = 0;
@@ -79,7 +93,7 @@ export interface LineValidationResult {
  * Validates a single grid row against item configuration and business invariants.
  */
 export function validateGridLine(
-  line: Partial<GridLineItem>,
+  line: GridLineLike,
   itemConfig?: Item,
 ): LineValidationResult {
   // If row is completely empty, it is not an error (trailing empty row)
