@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { JobWorkService, CreateJobWorkDto, UpdateJobWorkDto } from './job-work.service';
+import { JobWorkService } from './job-work.service';
+import { CreateJobWorkDto, UpdateJobWorkDto } from './job-work.dto';
 import { Roles, CurrentUser } from '../common/decorators';
 import { AuthUser } from '../common/decorators/current-user.decorator';
 
@@ -16,8 +17,9 @@ export class JobWorkController {
     @CurrentUser() user: AuthUser,
     @Query('limit') limit = 50,
     @Query('offset') offset = 0,
+    @Query('work_type') workType?: string,
   ) {
-    return this.jobWorkService.findAll(user, Number(limit), Number(offset));
+    return this.jobWorkService.findAll(user, Number(limit), Number(offset), workType);
   }
 
   @Get('balances')
@@ -25,6 +27,17 @@ export class JobWorkController {
   @ApiOperation({ summary: 'Get current net job work balances per party and item (Kg issued - received)' })
   getBalances() {
     return this.jobWorkService.getBalances();
+  }
+
+  @Get('pending/:partyId')
+  @Roles('OWNER', 'STAFF')
+  @ApiOperation({ summary: 'Get pending issued lines for a specific Karigar' })
+  getPendingLines(
+    @Param('partyId') partyId: string,
+    @CurrentUser() user: AuthUser,
+    @Query('work_type') workType?: string,
+  ) {
+    return this.jobWorkService.getPendingIssueLines(partyId, user, workType);
   }
 
   @Get(':id')

@@ -152,6 +152,39 @@ async function runMigrations() {
       console.log('✓ 005_add_purchases_charges_and_narration has already been applied.');
     }
 
+    // Migration 006: Add job_work_seq, job_work_entries extra columns and job_work_lines table
+    if (!appliedNames.has('006_job_work_lines_and_sequence')) {
+      console.log('Running migration: 006_job_work_lines_and_sequence...');
+      await pool.query(`
+        CREATE SEQUENCE IF NOT EXISTS job_work_seq START WITH 3001;
+        
+        ALTER TABLE job_work_entries ADD COLUMN IF NOT EXISTS entry_no BIGINT NOT NULL DEFAULT nextval('job_work_seq');
+        ALTER TABLE job_work_entries ADD COLUMN IF NOT EXISTS idempotency_key UUID UNIQUE;
+        ALTER TABLE job_work_entries ADD COLUMN IF NOT EXISTS issue_id UUID REFERENCES job_work_entries(id) ON DELETE SET NULL;
+        ALTER TABLE job_work_entries ALTER COLUMN item_id DROP NOT NULL;
+        ALTER TABLE job_work_entries ALTER COLUMN weight_kg DROP NOT NULL;
+        ALTER TABLE job_work_entries ALTER COLUMN weight_kg SET DEFAULT 0;
+
+        CREATE TABLE IF NOT EXISTS job_work_lines (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            job_work_id UUID NOT NULL REFERENCES job_work_entries(id) ON DELETE CASCADE,
+            issue_line_id UUID REFERENCES job_work_lines(id) ON DELETE SET NULL,
+            item_id UUID NOT NULL REFERENCES items(id),
+            unit VARCHAR(10) NOT NULL DEFAULT 'KG',
+            pieces INTEGER NOT NULL DEFAULT 0 CHECK (pieces >= 0),
+            weight_kg NUMERIC(12,3) NOT NULL DEFAULT 0 CHECK (weight_kg >= 0),
+            labour_charge NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (labour_charge >= 0),
+            is_closed BOOLEAN NOT NULL DEFAULT false,
+            notes TEXT,
+            CONSTRAINT check_pieces_or_weight_jw CHECK (pieces > 0 OR weight_kg > 0)
+        );
+      `);
+      await pool.query('INSERT INTO _migrations (name) VALUES ($1)', ['006_job_work_lines_and_sequence']);
+      console.log('✓ 006_job_work_lines_and_sequence applied successfully.');
+    } else {
+      console.log('✓ 006_job_work_lines_and_sequence has already been applied.');
+    }
+
     console.log('All migrations completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);

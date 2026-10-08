@@ -37,6 +37,7 @@ END $$;
 -- Sequences for continuous invoice and voucher tracking
 CREATE SEQUENCE IF NOT EXISTS sale_bill_seq START WITH 1001;
 CREATE SEQUENCE IF NOT EXISTS purchase_bill_seq START WITH 5001;
+CREATE SEQUENCE IF NOT EXISTS job_work_seq START WITH 3001;
 CREATE SEQUENCE IF NOT EXISTS voucher_seq START WITH 2001;
 
 -- 1. Users table
@@ -170,11 +171,14 @@ CREATE TABLE IF NOT EXISTS purchase_lines (
 -- 9. Job work entries table (Polish / Meena)
 CREATE TABLE IF NOT EXISTS job_work_entries (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    entry_no BIGINT NOT NULL UNIQUE DEFAULT nextval('job_work_seq'),
+    idempotency_key UUID UNIQUE,
     work_type work_type NOT NULL,
     party_id UUID NOT NULL REFERENCES parties(id),
-    item_id UUID NOT NULL REFERENCES items(id),
+    issue_id UUID REFERENCES job_work_entries(id) ON DELETE SET NULL,
+    item_id UUID REFERENCES items(id),
     direction TEXT NOT NULL CHECK (direction IN ('ISSUE', 'RECEIVE')),
-    weight_kg NUMERIC(12,3) NOT NULL CHECK (weight_kg > 0),
+    weight_kg NUMERIC(12,3) NOT NULL DEFAULT 0,
     charge_amount NUMERIC(14,2) DEFAULT 0,
     entry_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     notes TEXT,
@@ -182,6 +186,21 @@ CREATE TABLE IF NOT EXISTS job_work_entries (
     is_deleted BOOLEAN NOT NULL DEFAULT false,
     deleted_at TIMESTAMPTZ,
     deleted_by UUID REFERENCES users(id)
+);
+
+-- 9b. Job work lines table (Multi-item fast grid issue & linked receive lines)
+CREATE TABLE IF NOT EXISTS job_work_lines (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    job_work_id UUID NOT NULL REFERENCES job_work_entries(id) ON DELETE CASCADE,
+    issue_line_id UUID REFERENCES job_work_lines(id) ON DELETE SET NULL,
+    item_id UUID NOT NULL REFERENCES items(id),
+    unit VARCHAR(10) NOT NULL DEFAULT 'KG',
+    pieces INTEGER NOT NULL DEFAULT 0 CHECK (pieces >= 0),
+    weight_kg NUMERIC(12,3) NOT NULL DEFAULT 0 CHECK (weight_kg >= 0),
+    labour_charge NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (labour_charge >= 0),
+    is_closed BOOLEAN NOT NULL DEFAULT false,
+    notes TEXT,
+    CONSTRAINT check_pieces_or_weight_jw CHECK (pieces > 0 OR weight_kg > 0)
 );
 
 -- 10. Money vouchers (Receipt / Payment)

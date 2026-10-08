@@ -457,46 +457,194 @@ export async function createPurchase(dto: any): Promise<Purchase> {
   return apiClient<Purchase>('/purchases', { method: 'POST', body: JSON.stringify(dto) });
 }
 
-export async function listJobWork(): Promise<JobWorkEntry[]> {
-  if (USE_MOCK) return mockJobWork;
-  return apiClient<JobWorkEntry[]>('/job-work');
+export async function listJobWork(workType?: string): Promise<JobWorkEntry[]> {
+  if (USE_MOCK) {
+    if (workType) return mockJobWork.filter((j) => j.work_type === workType);
+    return mockJobWork;
+  }
+  return apiClient<JobWorkEntry[]>(`/job-work${workType ? `?work_type=${workType}` : ''}`);
+}
+
+export async function getJobWork(id: string): Promise<JobWorkEntry> {
+  if (USE_MOCK) {
+    const jw = mockJobWork.find((j) => j.id === id);
+    if (!jw) throw new Error('Job work entry not found');
+    return jw;
+  }
+  return apiClient<JobWorkEntry>(`/job-work/${id}`);
+}
+
+export async function getPendingJobWorkLines(partyId: string, workType?: string): Promise<PendingJobWorkLine[]> {
+  if (USE_MOCK) {
+    const pendingList: PendingJobWorkLine[] = [];
+    const issues = mockJobWork.filter((j) => j.party_id === partyId && j.direction === 'ISSUE' && (!workType || j.work_type === workType));
+    const receives = mockJobWork.filter((j) => j.party_id === partyId && j.direction === 'RECEIVE');
+
+    for (const issue of issues) {
+      if (!issue.lines || issue.lines.length === 0) {
+        // Fallback for legacy mock item
+        const item = mockItems.find((i) => i.id === issue.item_id);
+        const sentKg = issue.weight_kg || 0;
+        let receivedKg = 0;
+        for (const r of receives) {
+          if (r.item_id === issue.item_id) receivedKg += (r.weight_kg || 0);
+        }
+        const pendingKg = Math.max(0, Math.round((sentKg - receivedKg) * 1000) / 1000);
+        if (pendingKg > 0) {
+          pendingList.push({
+            issue_line_id: `jl_${issue.id}_1`,
+            job_work_id: issue.id,
+            entry_no: issue.entry_no || 3001,
+            work_type: issue.work_type,
+            entry_at: issue.entry_at,
+            item_id: issue.item_id || 'i1',
+            item_name: item?.name || 'Jewellery Item',
+            item_code: item?.code,
+            unit: 'KG',
+            sent_pieces: 0,
+            sent_weight_kg: sentKg,
+            already_received_pieces: 0,
+            already_received_weight_kg: receivedKg,
+            pending_pieces: 0,
+            pending_weight_kg: pendingKg,
+          });
+        }
+      } else {
+        for (const line of issue.lines) {
+          if (line.is_closed) continue;
+          const item = mockItems.find((i) => i.id === line.item_id);
+          let recvPcs = 0;
+          let recvKg = 0;
+          for (const r of receives) {
+            for (const rl of (r.lines || [])) {
+              if (rl.issue_line_id === line.id) {
+                recvPcs += (rl.pieces || 0);
+                recvKg += (rl.weight_kg || 0);
+              }
+            }
+          }
+          const pendPcs = Math.max(0, (line.pieces || 0) - recvPcs);
+          const pendKg = Math.max(0, Math.round(((line.weight_kg || 0) - recvKg) * 1000) / 1000);
+          if (pendPcs > 0 || pendKg > 0) {
+            pendingList.push({
+              issue_line_id: line.id || `jl_${issue.id}`,
+              job_work_id: issue.id,
+              entry_no: issue.entry_no || 3001,
+              work_type: issue.work_type,
+              entry_at: issue.entry_at,
+              item_id: line.item_id,
+              item_name: item?.name || line.item_name || 'Item',
+              item_code: item?.code || line.item_code,
+              unit: line.unit || 'KG',
+              sent_pieces: line.pieces || 0,
+              sent_weight_kg: line.weight_kg || 0,
+              already_received_pieces: recvPcs,
+              already_received_weight_kg: recvKg,
+              pending_pieces: pendPcs,
+              pending_weight_kg: pendKg,
+            });
+          }
+        }
+      }
+    }
+    return pendingList;
+  }
+  return apiClient<PendingJobWorkLine[]>(`/job-work/pending/${partyId}${workType ? `?work_type=${workType}` : ''}`);
+}
+
+export async function deleteJobWork(id: string): Promise<any> {
+  if (USE_MOCK) {
+    mockJobWork = mockJobWork.filter((j) => j.id !== id);
+    return { success: true };
+  }
+  return apiClient(`/job-work/${id}`, { method: 'DELETE' });
 }
 
 export async function createJobWork(dto: any): Promise<JobWorkEntry> {
   if (USE_MOCK) {
     const party = mockParties.find((p) => p.id === dto.party_id);
-    const item = mockItems.find((i) => i.id === dto.item_id);
+    const lines = dto.lines || (dto.item_id ? [{
+      id: `jl_${Date.now()}`,
+      item_id: dto.item_id,
+      unit: 'KG',
+      pieces: 0,
+      weight_kg: dto.weight_kg || 0,
+      labour_charge: dto.charge_amount || 0,
+    }] : []);
+
+    let totalWeight = 0;
+    let totalLabour = 0;
+    lines.forEach((l: any) => {
+      totalWeight += Number(l.weight_kg) || 0;
+      totalLabour += Number(l.labour_charge) || 0;
+    });
+
+    const prevBal = party ? party.current_balance ?? party.opening_balance : 0;
+    const closingBal = dto.direction === 'RECEIVE' ? prevBal + totalLabour : prevBal;
+
     const newJw: JobWorkEntry = {
       id: `jw_${Date.now()}`,
+      entry_no: 3001 + mockJobWork.length,
       work_type: dto.work_type,
       party_id: dto.party_id,
-      party_name: party?.name || 'Worker',
-      item_id: dto.item_id,
-      item_name: item?.name || 'Item',
+      party_name: party?.name || 'Karigar',
       direction: dto.direction,
-      weight_kg: dto.weight_kg,
-      charge_amount: dto.charge_amount || 0,
+      issue_id: dto.issue_id,
+      weight_kg: Math.round(totalWeight * 1000) / 1000,
+      charge_amount: totalLabour,
+      total_labour_charge: totalLabour,
+      balance_before: prevBal,
+      this_labour: totalLabour,
+      balance_after: closingBal,
       entry_at: new Date().toISOString(),
       notes: dto.notes,
       created_by: 'u2',
       creator_name: 'Amit Verma',
+      lines: lines.map((l: any, i: number) => {
+        const item = mockItems.find((it) => it.id === l.item_id);
+        return {
+          id: l.id || `jl_${Date.now()}_${i}`,
+          issue_line_id: l.issue_line_id,
+          item_id: l.item_id,
+          item_name: item?.name || 'Item',
+          item_code: item?.code,
+          unit: l.unit || 'KG',
+          pieces: l.pieces || 0,
+          weight_kg: l.weight_kg || 0,
+          labour_charge: l.labour_charge || 0,
+          is_closed: l.is_closed || false,
+          notes: l.notes,
+        };
+      }),
     };
     mockJobWork.unshift(newJw);
 
-    if (item) {
-      const isIssue = dto.direction === 'ISSUE';
-      const weightDelta = isIssue ? -(dto.weight_kg || 0) : +(dto.weight_kg || 0);
-      item.stock_kg = Math.max(0, Math.round((item.stock_kg + weightDelta) * 1000) / 1000);
-      mockStockMovements.unshift({
-        id: `sm_${Date.now()}`,
-        item_id: item.id,
-        entry_at: new Date().toISOString(),
-        source_type: `${dto.work_type} ${dto.direction}`,
-        pieces_delta: 0,
-        kg_delta: weightDelta,
-        reference: `Artisan: ${party?.name || ''}`,
-      });
+    if (party && dto.direction === 'RECEIVE' && totalLabour > 0) {
+      party.current_balance = closingBal;
     }
+
+    // Stock movements
+    lines.forEach((l: any) => {
+      const item = mockItems.find((it) => it.id === l.item_id);
+      if (item) {
+        const isIssue = dto.direction === 'ISSUE';
+        const weightDelta = isIssue ? -(l.weight_kg || 0) : +(l.weight_kg || 0);
+        const piecesDelta = isIssue ? -(l.pieces || 0) : +(l.pieces || 0);
+
+        item.stock_pieces = Math.max(0, item.stock_pieces + piecesDelta);
+        item.stock_kg = Math.max(0, Math.round((item.stock_kg + weightDelta) * 1000) / 1000);
+
+        mockStockMovements.unshift({
+          id: `sm_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
+          item_id: item.id,
+          entry_at: new Date().toISOString(),
+          source_type: `${dto.work_type}_${dto.direction}`,
+          pieces_delta: piecesDelta,
+          kg_delta: weightDelta,
+          reference: `Karigar: ${party?.name || ''} (${dto.direction})`,
+        });
+      }
+    });
 
     return newJw;
   }

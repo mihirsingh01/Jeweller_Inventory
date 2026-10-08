@@ -178,20 +178,84 @@ export interface Purchase {
   reminder?: any;
 }
 
+export interface JobWorkLine {
+  id?: string;
+  issue_line_id?: string;
+  item_id: string;
+  item_name?: string;
+  item_code?: string;
+  unit: 'PCS' | 'KG';
+  pieces: number;
+  weight_kg: number;
+  labour_charge?: number;
+  is_closed?: boolean;
+  notes?: string;
+  orig_pieces?: number;
+  orig_weight_kg?: number;
+}
+
+export interface PendingJobWorkLine {
+  issue_line_id: string;
+  job_work_id: string;
+  entry_no: number;
+  work_type: WorkType;
+  entry_at: string;
+  item_id: string;
+  item_name: string;
+  item_code?: string;
+  unit: 'PCS' | 'KG';
+  sent_pieces: number;
+  sent_weight_kg: number;
+  already_received_pieces: number;
+  already_received_weight_kg: number;
+  pending_pieces: number;
+  pending_weight_kg: number;
+}
+
 export interface JobWorkEntry {
   id: string;
+  entry_no?: number;
   work_type: WorkType;
   party_id: string;
   party_name?: string;
-  item_id: string;
+  party_phone?: string;
+  item_id?: string;
   item_name?: string;
   direction: 'ISSUE' | 'RECEIVE';
+  issue_id?: string;
   weight_kg: number;
   charge_amount?: number;
+  total_labour_charge?: number;
   entry_at: string;
   notes?: string;
   created_by: string;
   creator_name?: string;
+  balance_before?: number;
+  this_labour?: number;
+  balance_after?: number;
+  lines?: JobWorkLine[];
+}
+
+export interface CreateJobWorkInput {
+  work_type: WorkType;
+  party_id: string;
+  direction: 'ISSUE' | 'RECEIVE';
+  issue_id?: string;
+  notes?: string;
+  idempotency_key?: string;
+  item_id?: string;
+  weight_kg?: number;
+  charge_amount?: number;
+  lines?: Array<{
+    issue_line_id?: string;
+    item_id?: string;
+    unit?: 'PCS' | 'KG';
+    pieces?: number;
+    weight_kg?: number;
+    labour_charge?: number;
+    is_closed?: boolean;
+    notes?: string;
+  }>;
 }
 
 export interface VoucherAllocation {
