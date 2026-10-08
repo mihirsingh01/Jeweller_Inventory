@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Query,
+  Param,
   Headers,
   Req,
   Res,
@@ -77,5 +78,33 @@ export class WhatsAppController {
     @Query('recipient') recipient?: string,
   ) {
     return this.whatsAppService.getMessages(Number(limit), Number(offset), status, recipient);
+  }
+
+  @Get('outbox')
+  @Roles('OWNER')
+  @ApiOperation({ summary: 'List notification outbox rows with delivery status (Owner only, Req 4)' })
+  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'SENT', 'FAILED', 'SKIPPED'] })
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'offset', required: false })
+  getOutbox(
+    @Query('limit') limit = 50,
+    @Query('offset') offset = 0,
+    @Query('status') status?: string,
+  ) {
+    return this.whatsAppService.getOutbox(Number(limit), Number(offset), status);
+  }
+
+  @Post('outbox/process')
+  @Roles('OWNER')
+  @ApiOperation({ summary: 'Process pending items in notification outbox (Owner only)' })
+  processOutbox(@Query('limit') limit = 20) {
+    return this.whatsAppService.processPendingOutbox(Number(limit));
+  }
+
+  @Post('outbox/:id/retry')
+  @Roles('OWNER')
+  @ApiOperation({ summary: 'Retry a failed notification outbox item (Owner only, Req 4)' })
+  retryOutbox(@Param('id') id: string) {
+    return this.whatsAppService.retryOutbox(Number(id));
   }
 }

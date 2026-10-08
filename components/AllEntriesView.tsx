@@ -4,6 +4,10 @@ import React, { useState, useMemo } from 'react';
 import { Sale, Purchase } from '@/lib/api/types';
 import { formatRupee, formatDate } from '@/lib/format';
 import { deleteSale, deletePurchase } from '@/lib/api/services';
+import {
+  formatSaleBillShareMessage,
+  buildWhatsAppShareUrl,
+} from '@/lib/calculations/whatsapp-share';
 
 interface AllEntriesViewProps {
   entries: Sale[];
@@ -28,6 +32,18 @@ export function AllEntriesView({
   const [filterType, setFilterType] = useState<'ALL' | 'SALE' | 'PURCHASE'>('ALL');
   const [deleteTarget, setDeleteTarget] = useState<UnifiedEntry | null>(null);
   const [viewTarget, setViewTarget] = useState<UnifiedEntry | null>(null);
+
+  const handleShareWhatsApp = (item: UnifiedEntry) => {
+    const text = formatSaleBillShareMessage({
+      billNo: item.bill_no,
+      partyName: item.party_name,
+      totalAmount: item.total_amount,
+      dueDate: item.due_date,
+    });
+    const phone = (item as any).party_phone || (item as any).party_whatsapp || '';
+    const url = buildWhatsAppShareUrl(phone, text);
+    window.open(url, '_blank');
+  };
   const [deleting, setDeleting] = useState(false);
 
   // Combine sales and purchases
@@ -174,7 +190,16 @@ export function AllEntriesView({
                   <span className={`status status-${item.status.toLowerCase()}`}>{item.status}</span>
                 </td>
                 <td data-label="Actions" style={{ textAlign: 'right' }}>
-                  <div className="action-buttons" style={{ justifyContent: 'flex-end' }}>
+                  <div className="action-buttons" style={{ justifyContent: 'flex-end', gap: 6 }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ color: '#059669', borderColor: '#A7F3D0', padding: '4px 8px', fontSize: 11 }}
+                      title="Share bill on WhatsApp"
+                      onClick={() => handleShareWhatsApp(item)}
+                    >
+                      📱 WhatsApp
+                    </button>
                     <button className="btn-secondary" onClick={() => setViewTarget(item)}>View</button>
                     <button className="btn-secondary btn-delete" onClick={() => setDeleteTarget(item)}>Delete</button>
                   </div>

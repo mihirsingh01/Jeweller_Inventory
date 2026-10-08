@@ -1,13 +1,16 @@
 'use client'
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ReminderSettings, PaymentReminder, Party } from '@/lib/api/types';
+import { ReminderSettings, PaymentReminder, Party, NotificationOutboxRow } from '@/lib/api/types';
 import {
   updateReminderSettings,
   triggerDailyReminders,
   listReminders,
   createManualReminder,
   updateReminderStatus,
+  listOutbox,
+  retryOutboxItem,
+  processOutbox,
 } from '@/lib/api/services';
 import { formatRupee, formatDate } from '@/lib/format';
 import {
@@ -56,6 +59,50 @@ export function RemindersView({ settings, parties, role = 'Owner', onRefresh }: 
   const [savingSettings, setSavingSettings] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<any | null>(null);
+
+  // Outbox state (Req 4)
+  const [outboxList, setOutboxList] = useState<NotificationOutboxRow[]>([]);
+  const [loadingOutbox, setLoadingOutbox] = useState(false);
+  const [processingOutbox, setProcessingOutbox] = useState(false);
+
+  const fetchOutboxList = useCallback(async () => {
+    setLoadingOutbox(true);
+    try {
+      const data = await listOutbox();
+      setOutboxList(data);
+    } catch (err: any) {
+      console.error('Error fetching outbox:', err);
+    } finally {
+      setLoadingOutbox(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      fetchOutboxList();
+    }
+  }, [activeTab, fetchOutboxList]);
+
+  const handleRetryOutbox = async (id: number) => {
+    try {
+      await retryOutboxItem(id);
+      await fetchOutboxList();
+    } catch (err: any) {
+      alert(err.message || 'Error retrying notification');
+    }
+  };
+
+  const handleProcessPendingOutbox = async () => {
+    setProcessingOutbox(true);
+    try {
+      await processOutbox();
+      await fetchOutboxList();
+    } catch (err: any) {
+      alert(err.message || 'Error processing outbox');
+    } finally {
+      setProcessingOutbox(false);
+    }
+  };
 
   // Backspace navigation guard
   useBackspaceNavigationGuard();
@@ -607,6 +654,116 @@ export function RemindersView({ settings, parties, role = 'Owner', onRefresh }: 
                 <li>Reminders stop automatically when a bill is settled or cancelled.</li>
                 <li>Staff can only view and manage reminders for their own entries.</li>
               </ul>
+            </div>
+          </div>
+
+          {/* Notification Outbox & Delivery Status Log (Req 4) */}
+          <div className="panel" style={{ gridColumn: '1 / -1', marginTop: 10 }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 14,
+              }}
+            >
+              <div>
+                <h3 style={{ font: '18px Georgia', margin: 0 }}>
+                  Notification Outbox &amp; Delivery Log (Req 4)
+                </h3>
+                <p style={{ margin: '3px 0 0', fontSize: 12, color: '#7A7268' }}>
+                  Audited WhatsApp HSM deliveries and status tracking.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleProcessPendingOutbox}
+                disabled={processingOutbox}
+              >
+                {processingOutbox ? 'Processing...' : '⚡ Process Pending Outbox'}
+              </button>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                <thead style={{ background: '#FAF6F2', borderBottom: '1px solid var(--line)' }}>
+                  <tr>
+                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>Event Type</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>Recipient</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>Status</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>Queued At</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>Processed At</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>Error Details</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'right' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingOutbox ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: 20, textAlign: 'center', color: '#7A7268' }}>
+                        Loading outbox notifications...
+                      </td>
+                    </tr>
+                  ) : outboxList.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: 20, textAlign: 'center', color: '#7A7268' }}>
+                        No outbox notifications queued.
+                      </td>
+                    </tr>
+                  ) : (
+                    outboxList.map((item) => (
+                      <tr key={item.id} style={{ borderBottom: '1px solid var(--line)' }}>
+                        <td style={{ padding: '8px 12px', fontWeight: 600 }}>{item.event_type}</td>
+                        <td style={{ padding: '8px 12px' }}>{item.recipient_phone || 'Owner'}</td>
+                        <td style={{ padding: '8px 12px' }}>
+                          <span
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: 10,
+                              fontSize: 10,
+                              fontWeight: 700,
+                              background:
+                                item.status === 'SENT'
+                                  ? '#DEF7EC'
+                                  : item.status === 'FAILED'
+                                  ? '#FEE2E2'
+                                  : '#FEF3C7',
+                              color:
+                                item.status === 'SENT'
+                                  ? '#03543F'
+                                  : item.status === 'FAILED'
+                                  ? '#991B1B'
+                                  : '#92400E',
+                            }}
+                          >
+                            {item.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 12px', color: '#7A7268' }}>{formatDate(item.created_at)}</td>
+                        <td style={{ padding: '8px 12px', color: '#7A7268' }}>
+                          {item.processed_at ? formatDate(item.processed_at) : '—'}
+                        </td>
+                        <td style={{ padding: '8px 12px', color: '#DC2626', maxWidth: 200 }}>
+                          {item.error_message || '—'}
+                        </td>
+                        <td style={{ padding: '8px 12px', textAlign: 'right' }}>
+                          {item.status === 'FAILED' && (
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              style={{ padding: '2px 8px', fontSize: 11 }}
+                              onClick={() => handleRetryOutbox(item.id)}
+                            >
+                              🔄 Retry
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

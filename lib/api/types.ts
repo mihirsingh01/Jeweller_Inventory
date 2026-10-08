@@ -361,6 +361,19 @@ export interface AuditLogRow {
   at: string;
 }
 
+export interface NotificationOutboxRow {
+  id: number;
+  event_type: string;
+  entity_type: string;
+  entity_id: string;
+  recipient_phone?: string;
+  payload: any;
+  status: 'PENDING' | 'SENT' | 'FAILED' | 'SKIPPED';
+  created_at: string;
+  processed_at?: string;
+  error_message?: string;
+}
+
 export interface DashboardStats {
   totalReceivable: number;
   totalPayable: number;

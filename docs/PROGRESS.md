@@ -73,11 +73,13 @@ Running log for the implementation phases defined in `Claude.pdf`.
   - Reminders UI (`components/RemindersView.tsx`): 4 KPI cards (Overdue, Today, Upcoming, Settled), filter chips, party filter, dynamic queue table, quick status actions (`✓ Settle`, `Dismiss`, `Cancel`), and scheduler automation settings.
   - Added Reminders tab to `STAFF_NAV` so staff can manage their own overdue follow-ups.
   - Automated unit test suite `test/reminders-filtering.test.ts` (5/5 tests passing).
-- [ ] **Phase 10: Notifications and WhatsApp** (Req 3, 4, 34, 37, 47)
-  - Atomic `notification_outbox` table written inside the accounting transaction.
-  - Post-commit async dispatcher.
-  - `WhatsAppProvider` (Cloud API + manual `wa.me` fallback).
-  - Bill image generator (PNG/JPEG) with one-click send.
+- [x] **Phase 10: Notifications and WhatsApp** (Req 3, 4, 34, 37, 47)
+  - Atomic `notification_outbox` table writes for all mutations (`SALE_CREATED`, `PURCHASE_CREATED`, `JOB_WORK_CREATED`, `VOUCHER_CREATED`).
+  - Outbox API endpoints: `GET /whatsapp/outbox` with delivery status filters, `POST /whatsapp/outbox/process`, and `POST /whatsapp/outbox/:id/retry` (Req 4).
+  - Outbox log table in Admin Settings UI with real-time delivery status badges (`SENT`, `FAILED`, `PENDING`), error details, and retry actions.
+  - WhatsApp message formatting engine (`lib/calculations/whatsapp-share.ts`) with Indian phone normalization and encoded prefilled `wa.me` links.
+  - One-click "📱 WhatsApp" share button in `AllEntriesView` with rich bill summary prefilling.
+  - Automated unit test suite `test/notifications-dispatch.test.ts` (5/5 tests passing).
 - [ ] **Phase 11: Sales Orders and Purchase Orders** (Req 6, 7)
   - Orders tables decoupled from financial ledger and stock.
   - Statuses: Pending, Partially fulfilled, Completed, Cancelled.
@@ -91,8 +93,8 @@ Running log for the implementation phases defined in `Claude.pdf`.
 ---
 
 ## Current Status
-- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder), Phase 6 (Purchase Bill with Accounts Payable, Narration, and Charges), Phase 7 (Job Work with Issue Grid, Linked Receive Lines, Difference Calculation, and Labour Charges), Phase 8 (Receipt and Payment Vouchers with Cash/Bank Books, Live Balances, and Advance Warnings), Phase 9 (Reminders Module Extension with Queue Table, KPI Cards, and Manual Creation).
-- **Next Phase:** Phase 10 — Notifications and WhatsApp (Req 3, 4, 34, 37, 47).
+- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder), Phase 6 (Purchase Bill with Accounts Payable, Narration, and Charges), Phase 7 (Job Work with Issue Grid, Linked Receive Lines, Difference Calculation, and Labour Charges), Phase 8 (Receipt and Payment Vouchers with Cash/Bank Books, Live Balances, and Advance Warnings), Phase 9 (Reminders Module Extension with Queue Table, KPI Cards, and Manual Creation), Phase 10 (Notifications and WhatsApp with Outbox Tracking, Retries, and One-Click Bill Sharing).
+- **Next Phase:** Phase 11 — Sales Orders and Purchase Orders (Req 6, 7).
 
 
 

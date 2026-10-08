@@ -2,6 +2,7 @@ import {
   Injectable,
   Logger,
   OnModuleInit,
+  NotFoundException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { DatabaseService } from '../database/database.service';
@@ -187,5 +188,100 @@ export class WhatsAppService implements OnModuleInit {
 
     const res = await this.db.query(query, params);
     return res.rows;
+  }
+
+  async getOutbox(limit = 50, offset = 0, status?: string) {
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let idx = 1;
+
+    if (status) {
+      conditions.push(`status = $${idx++}`);
+      params.push(status.toUpperCase());
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    params.push(limit, offset);
+
+    const query = `
+      SELECT * FROM notification_outbox
+      ${where}
+      ORDER BY created_at DESC
+      LIMIT $${idx++} OFFSET $${idx}
+    `;
+
+    const res = await this.db.query(query, params);
+    return res.rows;
+  }
+
+  async retryOutbox(id: number) {
+    const res = await this.db.query(
+      `SELECT * FROM notification_outbox WHERE id = $1`,
+      [id],
+    );
+    if (res.rows.length === 0) {
+      throw new NotFoundException('Outbox record not found');
+    }
+
+    const item = res.rows[0];
+    try {
+      const sendRes = await this.send({
+        to: item.recipient_phone || process.env.OWNER_WHATSAPP || '+919690000000',
+        templateName: item.event_type.toLowerCase(),
+        parameters: typeof item.payload === 'string' ? JSON.parse(item.payload) : item.payload,
+        relatedType: item.entity_type,
+        relatedId: item.entity_id,
+      });
+
+      await this.db.query(
+        `UPDATE notification_outbox
+         SET status = 'SENT', processed_at = now(), error_message = NULL
+         WHERE id = $1`,
+        [id],
+      );
+
+      return { success: true, message: 'Notification dispatched successfully', sendRes };
+    } catch (err: any) {
+      await this.db.query(
+        `UPDATE notification_outbox
+         SET status = 'FAILED', processed_at = now(), error_message = $1
+         WHERE id = $2`,
+        [err.message, id],
+      );
+      return { success: false, error: err.message };
+    }
+  }
+
+  async processPendingOutbox(limit = 20) {
+    const res = await this.db.query(
+      `SELECT * FROM notification_outbox WHERE status = 'PENDING' ORDER BY id ASC LIMIT $1`,
+      [limit],
+    );
+
+    let processed = 0;
+    for (const item of res.rows) {
+      try {
+        await this.send({
+          to: item.recipient_phone || process.env.OWNER_WHATSAPP || '+919690000000',
+          templateName: item.event_type.toLowerCase(),
+          parameters: typeof item.payload === 'string' ? JSON.parse(item.payload) : item.payload,
+          relatedType: item.entity_type,
+          relatedId: item.entity_id,
+        });
+
+        await this.db.query(
+          `UPDATE notification_outbox SET status = 'SENT', processed_at = now() WHERE id = $1`,
+          [item.id],
+        );
+        processed++;
+      } catch (err: any) {
+        await this.db.query(
+          `UPDATE notification_outbox SET status = 'FAILED', processed_at = now(), error_message = $1 WHERE id = $2`,
+          [err.message, item.id],
+        );
+      }
+    }
+
+    return { processed, total: res.rows.length };
   }
 }

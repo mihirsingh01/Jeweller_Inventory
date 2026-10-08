@@ -10,6 +10,7 @@ import {
   MoneyVoucher,
   ReminderSettings,
   PaymentReminder,
+  NotificationOutboxRow,
   AuditLogRow,
   DashboardStats,
   CreateItemDto,
@@ -117,6 +118,43 @@ let mockReminders: PaymentReminder[] = [
     created_by: 'u1',
     creator_name: 'Mihir Sharma',
     created_at: '2026-09-28T11:00:00Z',
+  },
+];
+
+let mockOutbox: NotificationOutboxRow[] = [
+  {
+    id: 1,
+    event_type: 'SALE_CREATED',
+    entity_type: 'SALE',
+    entity_id: 's2',
+    recipient_phone: '+919876543210',
+    payload: { bill_no: 1047, customer_name: 'Rajasthan Jewellers', amount: 275000 },
+    status: 'SENT',
+    created_at: '2026-09-18T10:00:00Z',
+    processed_at: '2026-09-18T10:00:02Z',
+  },
+  {
+    id: 2,
+    event_type: 'VOUCHER_CREATED',
+    entity_type: 'VOUCHER',
+    entity_id: 'v1',
+    recipient_phone: '+919876543210',
+    payload: { voucher_no: 2001, kind: 'RECEIPT', amount: 50000 },
+    status: 'SENT',
+    created_at: '2026-09-30T17:00:00Z',
+    processed_at: '2026-09-30T17:00:03Z',
+  },
+  {
+    id: 3,
+    event_type: 'REMINDER_ALERT',
+    entity_type: 'REMINDER',
+    entity_id: 'rem-1',
+    recipient_phone: '+919876543210',
+    payload: { customer_name: 'Rajasthan Jewellers', bill_no: '1047', days_overdue: '3' },
+    status: 'FAILED',
+    created_at: '2026-10-01T10:00:00Z',
+    processed_at: '2026-10-01T10:00:05Z',
+    error_message: 'Mock simulation: recipient rate limited',
   },
 ];
 
@@ -890,4 +928,37 @@ export async function sendBillOnWhatsApp(saleId: string): Promise<any> {
     };
   }
   return apiClient(`/sales/${saleId}/bill`, { method: 'POST' });
+}
+
+export async function listOutbox(status?: string): Promise<NotificationOutboxRow[]> {
+  if (USE_MOCK) {
+    if (status) return mockOutbox.filter((o) => o.status === status);
+    return mockOutbox;
+  }
+  const q = status ? `?status=${status}` : '';
+  return apiClient<NotificationOutboxRow[]>(`/whatsapp/outbox${q}`);
+}
+
+export async function retryOutboxItem(id: number): Promise<any> {
+  if (USE_MOCK) {
+    const item = mockOutbox.find((o) => o.id === id);
+    if (item) {
+      item.status = 'SENT';
+      item.processed_at = new Date().toISOString();
+      item.error_message = undefined;
+      return { success: true };
+    }
+    throw new Error('Outbox item not found');
+  }
+  return apiClient(`/whatsapp/outbox/${id}/retry`, { method: 'POST' });
+}
+
+export async function processOutbox(): Promise<any> {
+  if (USE_MOCK) {
+    mockOutbox.forEach((o) => {
+      if (o.status === 'PENDING') o.status = 'SENT';
+    });
+    return { success: true, processed: 1 };
+  }
+  return apiClient('/whatsapp/outbox/process', { method: 'POST' });
 }
