@@ -7,6 +7,7 @@ import {
   listItems,
   listBankAccounts,
   listSales,
+  listPurchases,
   listStaff,
   getReminderSettings,
   listAuditLog,
@@ -17,6 +18,7 @@ import {
   Item,
   BankAccount,
   Sale,
+  Purchase,
   User,
   ReminderSettings,
   AuditLogRow,
@@ -71,18 +73,20 @@ export default function Page() {
   const [items, setItems] = useState<Item[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [staffList, setStaffList] = useState<User[]>([]);
   const [reminderSettings, setReminderSettings] = useState<ReminderSettings | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogRow[]>([]);
 
   const loadData = async () => {
     try {
-      const [d, p, it, b, s, st, r, al] = await Promise.all([
+      const [d, p, it, b, s, pur, st, r, al] = await Promise.all([
         getDashboard(),
         listParties(),
         listItems(),
         listBankAccounts(),
         listSales(),
+        listPurchases(),
         listStaff(),
         getReminderSettings(),
         listAuditLog(),
@@ -92,6 +96,7 @@ export default function Page() {
       setItems(it);
       setBankAccounts(b);
       setSales(s);
+      setPurchases(pur);
       setStaffList(st);
       setReminderSettings(r);
       setAuditLogs(al);
@@ -228,8 +233,10 @@ export default function Page() {
           {role === 'Owner' && active === 'Entries' && (
             <AllEntriesView
               entries={sales}
+              purchases={purchases}
               onRefresh={loadData}
               onOpenSaleModal={() => setActiveModal('sale')}
+              onOpenPurchaseModal={() => setActiveModal('purchase')}
             />
           )}
 

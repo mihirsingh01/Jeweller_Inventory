@@ -356,29 +356,84 @@ export async function listPurchases(): Promise<Purchase[]> {
   return apiClient<Purchase[]>('/purchases');
 }
 
+export async function getPurchase(id: string): Promise<Purchase> {
+  if (USE_MOCK) {
+    const purchase = mockPurchases.find((p) => p.id === id);
+    if (!purchase) throw new Error('Purchase entry not found');
+    return purchase;
+  }
+  return apiClient<Purchase>(`/purchases/${id}`);
+}
+
+export async function deletePurchase(id: string): Promise<any> {
+  if (USE_MOCK) {
+    mockPurchases = mockPurchases.filter((p) => p.id !== id);
+    return { success: true };
+  }
+  return apiClient(`/purchases/${id}`, { method: 'DELETE' });
+}
+
 export async function createPurchase(dto: any): Promise<Purchase> {
   if (USE_MOCK) {
     const party = mockParties.find((p) => p.id === dto.party_id);
-    let total = 0;
-    dto.lines.forEach((l: any) => {
-      total += l.amount || (l.weight_kg > 0 ? l.weight_kg * l.rate : l.pieces * l.rate);
-    });
+    const subtotal = dto.subtotal || dto.lines.reduce((acc: number, l: any) => {
+      return acc + (l.amount || (l.weight_kg > 0 ? l.weight_kg * l.rate : l.pieces * l.rate));
+    }, 0);
+
+    const discountAmount = dto.discount_amount || 0;
+    const taxableAmount = dto.taxable_amount || Math.max(0, subtotal - discountAmount);
+    const gstAmount = dto.gst_amount || 0;
+    const transportCharges = dto.transport_charges || 0;
+    const packagingCharges = dto.packaging_charges || 0;
+    const otherCharges = dto.other_charges || 0;
+    const roundOff = dto.round_off || 0;
+    const grandTotal = dto.total_amount || (taxableAmount + gstAmount + transportCharges + packagingCharges + otherCharges + roundOff);
+
+    const prevBal = party ? party.current_balance ?? party.opening_balance : 0;
+    const closingBal = prevBal + grandTotal;
 
     const newP: Purchase = {
       id: `pr_${Date.now()}`,
       bill_no: 5002 + mockPurchases.length,
       party_id: dto.party_id,
       party_name: party?.name || 'Supplier',
+      party_phone: party?.whatsapp_number,
       entry_at: new Date().toISOString(),
       due_date: dto.due_date,
-      total_amount: total,
+      subtotal,
+      discount_type: dto.discount_type || 'PERCENT',
+      discount_value: dto.discount_value || 0,
+      discount_amount: discountAmount,
+      taxable_amount: taxableAmount,
+      gst_rate: dto.gst_rate || 3.0,
+      gst_amount: gstAmount,
+      transport_charges: transportCharges,
+      packaging_charges: packagingCharges,
+      other_charges: otherCharges,
+      round_off: roundOff,
+      total_amount: grandTotal,
+      balance_before: prevBal,
+      this_purchase: grandTotal,
+      balance_after: closingBal,
       status: 'OPEN',
       notes: dto.notes,
+      narration: dto.narration,
       created_by: 'u1',
       creator_name: 'Mihir Sharma',
-      lines: dto.lines,
+      lines: dto.lines.map((l: any) => {
+        const item = mockItems.find((i) => i.id === l.item_id);
+        return {
+          ...l,
+          item_name: item?.name || 'Item',
+        };
+      }),
+      reminder: dto.reminder,
     };
     mockPurchases.unshift(newP);
+
+    if (party) {
+      party.current_balance = closingBal;
+    }
 
     dto.lines.forEach((l: any) => {
       const item = mockItems.find((i) => i.id === l.item_id);

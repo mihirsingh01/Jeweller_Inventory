@@ -36,11 +36,15 @@ Running log for the implementation phases defined in `Claude.pdf`.
   - Optional payment reminder linked to sale (inserted into `payment_reminders`).
   - Dynamic historical ledger calculation on `findOne`: `balance_before | this_bill | balance_after`.
   - Atomic database transaction (bill header + lines + ledger + stock + reminder + audit + outbox).
-- [ ] **Phase 6: Purchase Bill** (Req 18–26)
-  - Mirror Sales implementation with supplier selector (`Alt+S`).
-  - Supplier ledger direction (purchase increases accounts payable).
-  - Narration text field (~500 chars).
-  - Atomic transaction with stock-in.
+- [x] **Phase 6: Purchase Bill** (Req 18–26)
+  - Mirror Sales implementation with supplier selector and `Alt+S` quick add.
+  - Supplier ledger direction (purchase increases accounts payable / credit to supplier).
+  - 3-column live supplier balance indicator: Previous Balance | This Purchase | Closing Balance (Payable / Cr).
+  - Narration text field (~500 chars) on purchase bill with counter and DB column.
+  - Full charges breakdown: Subtotal, Discount, Taxable, GST (3%), Transport, Packaging, Other, Round-off.
+  - Optional payment reminder linked to purchase bill (`payment_reminders` row).
+  - Atomic transaction (header + lines + stock inward + ledger payable + reminder + audit + outbox).
+  - Unified All Entries table supporting both Sales (↗) and Purchases (↙) with type filters and soft-delete reversal.
 - [ ] **Phase 7: Job Work (Karigar)** (Req 27–33)
   - Sent (Issue) with work type (Polish/Meena), item, qty, weight.
   - Received Back linked to issue lines showing Sent | Received | Difference.
@@ -72,6 +76,7 @@ Running log for the implementation phases defined in `Claude.pdf`.
 ---
 
 ## Current Status
-- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder).
-- **Next Phase:** Phase 6 — Purchase Bill (Req 18–26).
+- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder), Phase 6 (Purchase Bill with Accounts Payable, Narration, and Charges).
+- **Next Phase:** Phase 7 — Job Work (Karigar Issue & Receive Back with Difference and Labour Charges) (Req 27–33).
+
 

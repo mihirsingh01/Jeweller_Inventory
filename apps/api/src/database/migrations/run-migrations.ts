@@ -127,6 +127,31 @@ async function runMigrations() {
       console.log('✓ 004_add_sales_charges_reminders_outbox has already been applied.');
     }
 
+    // Migration 005: Add purchases extra charges, narration, and purchase_lines unit
+    if (!appliedNames.has('005_add_purchases_charges_and_narration')) {
+      console.log('Running migration: 005_add_purchases_charges_and_narration...');
+      await pool.query(`
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS subtotal NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS discount_type VARCHAR(10) NOT NULL DEFAULT 'PERCENT';
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS discount_value NUMERIC(10,2) NOT NULL DEFAULT 0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS taxable_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS gst_rate NUMERIC(5,2) NOT NULL DEFAULT 3.0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS gst_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS transport_charges NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS packaging_charges NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS other_charges NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS round_off NUMERIC(6,2) NOT NULL DEFAULT 0;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS narration TEXT;
+
+        ALTER TABLE purchase_lines ADD COLUMN IF NOT EXISTS unit VARCHAR(10) NOT NULL DEFAULT 'KG';
+      `);
+      await pool.query('INSERT INTO _migrations (name) VALUES ($1)', ['005_add_purchases_charges_and_narration']);
+      console.log('✓ 005_add_purchases_charges_and_narration applied successfully.');
+    } else {
+      console.log('✓ 005_add_purchases_charges_and_narration has already been applied.');
+    }
+
     console.log('All migrations completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);

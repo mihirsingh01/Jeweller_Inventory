@@ -1,24 +1,53 @@
 'use client'
 
-import React, { useState } from 'react';
-import { Sale } from '@/lib/api/types';
+import React, { useState, useMemo } from 'react';
+import { Sale, Purchase } from '@/lib/api/types';
 import { formatRupee, formatDate } from '@/lib/format';
-import { deleteSale } from '@/lib/api/services';
+import { deleteSale, deletePurchase } from '@/lib/api/services';
 
 interface AllEntriesViewProps {
   entries: Sale[];
+  purchases?: Purchase[];
   onRefresh: () => void;
   onOpenSaleModal: () => void;
+  onOpenPurchaseModal?: () => void;
 }
 
-export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntriesViewProps) {
+type UnifiedEntry = (Sale | Purchase) & {
+  entryType: 'SALE' | 'PURCHASE';
+};
+
+export function AllEntriesView({
+  entries,
+  purchases = [],
+  onRefresh,
+  onOpenSaleModal,
+  onOpenPurchaseModal,
+}: AllEntriesViewProps) {
   const [search, setSearch] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<Sale | null>(null);
-  const [viewTarget, setViewTarget] = useState<Sale | null>(null);
+  const [filterType, setFilterType] = useState<'ALL' | 'SALE' | 'PURCHASE'>('ALL');
+  const [deleteTarget, setDeleteTarget] = useState<UnifiedEntry | null>(null);
+  const [viewTarget, setViewTarget] = useState<UnifiedEntry | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const filtered = entries.filter((e) => {
-    if (search && !e.party_name?.toLowerCase().includes(search.toLowerCase()) && !e.creator_name?.toLowerCase().includes(search.toLowerCase())) {
+  // Combine sales and purchases
+  const allList: UnifiedEntry[] = useMemo(() => {
+    const sList: UnifiedEntry[] = entries.map((s) => ({ ...s, entryType: 'SALE' }));
+    const pList: UnifiedEntry[] = purchases.map((p) => ({ ...p, entryType: 'PURCHASE' }));
+    return [...sList, ...pList].sort(
+      (a, b) => new Date(b.entry_at).getTime() - new Date(a.entry_at).getTime(),
+    );
+  }, [entries, purchases]);
+
+  const filtered = allList.filter((e) => {
+    if (filterType !== 'ALL' && e.entryType !== filterType) {
+      return false;
+    }
+    if (
+      search &&
+      !e.party_name?.toLowerCase().includes(search.toLowerCase()) &&
+      !e.creator_name?.toLowerCase().includes(search.toLowerCase())
+    ) {
       return false;
     }
     return true;
@@ -28,7 +57,11 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await deleteSale(deleteTarget.id);
+      if (deleteTarget.entryType === 'PURCHASE') {
+        await deletePurchase(deleteTarget.id);
+      } else {
+        await deleteSale(deleteTarget.id);
+      }
       setDeleteTarget(null);
       onRefresh();
     } catch (err: any) {
@@ -45,12 +78,23 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
           <h2>Master Entries Directory</h2>
           <p>Every sale, purchase, and voucher recorded by all staff. Edit and soft-delete capabilities.</p>
         </div>
-        <button className="primary-button" onClick={onOpenSaleModal}>
-          ＋ Record New Entry
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {onOpenPurchaseModal && (
+            <button
+              className="btn-secondary"
+              onClick={onOpenPurchaseModal}
+              style={{ borderColor: '#B8893B', color: '#B8893B' }}
+            >
+              ＋ New Purchase ↙
+            </button>
+          )}
+          <button className="primary-button" onClick={onOpenSaleModal}>
+            ＋ New Sale ↗
+          </button>
+        </div>
       </div>
 
-      <div className="filter-bar">
+      <div className="filter-bar" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <input
           type="text"
           className="search-input"
@@ -58,6 +102,32 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button
+            type="button"
+            className={filterType === 'ALL' ? 'primary-button' : 'btn-secondary'}
+            style={{ padding: '6px 12px', fontSize: 12 }}
+            onClick={() => setFilterType('ALL')}
+          >
+            All ({allList.length})
+          </button>
+          <button
+            type="button"
+            className={filterType === 'SALE' ? 'primary-button' : 'btn-secondary'}
+            style={{ padding: '6px 12px', fontSize: 12 }}
+            onClick={() => setFilterType('SALE')}
+          >
+            Sales ↗ ({entries.length})
+          </button>
+          <button
+            type="button"
+            className={filterType === 'PURCHASE' ? 'primary-button' : 'btn-secondary'}
+            style={{ padding: '6px 12px', fontSize: 12 }}
+            onClick={() => setFilterType('PURCHASE')}
+          >
+            Purchases ↙ ({purchases.length})
+          </button>
+        </div>
         <span style={{ fontSize: 12, color: '#7A7268', marginLeft: 'auto' }}>
           Showing {filtered.length} entries
         </span>
@@ -67,6 +137,7 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
         <table className="data-table">
           <thead>
             <tr>
+              <th>Type</th>
               <th>Bill #</th>
               <th>Recorded Time</th>
               <th>Party</th>
@@ -79,13 +150,26 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
           </thead>
           <tbody>
             {filtered.map((item) => (
-              <tr key={item.id}>
+              <tr key={`${item.entryType}_${item.id}`}>
+                <td data-label="Type">
+                  {item.entryType === 'SALE' ? (
+                    <span style={{ background: '#FAF0F2', color: '#9B1C31', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700 }}>
+                      Sale ↗
+                    </span>
+                  ) : (
+                    <span style={{ background: '#FFF7ED', color: '#B8893B', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 700 }}>
+                      Purchase ↙
+                    </span>
+                  )}
+                </td>
                 <td data-label="Bill #"><strong>#{item.bill_no}</strong></td>
                 <td data-label="Recorded Time" style={{ color: '#7A7268' }}>{formatDate(item.entry_at)}</td>
                 <td data-label="Party"><strong>{item.party_name}</strong></td>
                 <td data-label="Created By"><span style={{ background: '#FAF0F2', padding: '2px 8px', borderRadius: 4, fontSize: 11, color: '#9B1C31' }}>{item.creator_name}</span></td>
-                <td data-label="Due Date">{item.due_date}</td>
-                <td data-label="Total" style={{ textAlign: 'right' }} className="tabular-numbers"><strong>{formatRupee(item.total_amount)}</strong></td>
+                <td data-label="Due Date">{item.due_date || '—'}</td>
+                <td data-label="Total" style={{ textAlign: 'right' }} className="tabular-numbers">
+                  <strong>{formatRupee(item.total_amount)}</strong>
+                </td>
                 <td data-label="Status" style={{ textAlign: 'center' }}>
                   <span className={`status status-${item.status.toLowerCase()}`}>{item.status}</span>
                 </td>
@@ -97,6 +181,13 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
                 </td>
               </tr>
             ))}
+            {filtered.length === 0 && (
+              <tr>
+                <td colSpan={9} style={{ textAlign: 'center', padding: 24, color: '#7A7268' }}>
+                  No entries found matching filters.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -106,18 +197,29 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
         <div className="modal-overlay">
           <div className="modal-card" style={{ maxWidth: 480 }}>
             <div className="modal-header">
-              <h3 style={{ color: '#DC2626' }}>Confirm Entry Deletion & Reversal</h3>
+              <h3 style={{ color: '#DC2626' }}>Confirm Entry Deletion &amp; Reversal</h3>
               <button className="close-btn" onClick={() => setDeleteTarget(null)}>✕</button>
             </div>
             <div className="modal-body">
               <p style={{ fontSize: 13, lineHeight: 1.5, color: '#2B2B2B' }}>
-                Are you sure you want to delete Invoice <strong>#{deleteTarget.bill_no}</strong> for <strong>{deleteTarget.party_name}</strong> ({formatRupee(deleteTarget.total_amount)})?
+                Are you sure you want to delete {deleteTarget.entryType === 'SALE' ? 'Invoice' : 'Purchase Bill'}{' '}
+                <strong>#{deleteTarget.bill_no}</strong> for <strong>{deleteTarget.party_name}</strong> ({formatRupee(deleteTarget.total_amount)})?
               </p>
               <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: 14, fontSize: 12, color: '#991B1B' }}>
-                <strong>Ledger & Stock Safeguard:</strong>
+                <strong>Ledger &amp; Stock Safeguard:</strong>
                 <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
-                  <li>Appends a reversing credit row to customer ledger for {formatRupee(deleteTarget.total_amount)}.</li>
-                  <li>Restores physical pieces and weight back into stock register.</li>
+                  {deleteTarget.entryType === 'SALE' ? (
+                    <>
+                      <li>Appends a reversing credit row to customer ledger for {formatRupee(deleteTarget.total_amount)}.</li>
+                      <li>Restores physical pieces and weight back into stock register.</li>
+                    </>
+                  ) : (
+                    <>
+                      <li>Appends a reversing debit row to supplier ledger to cancel payable of {formatRupee(deleteTarget.total_amount)}.</li>
+                      <li>Deducts inward pieces and weight back from stock register.</li>
+                    </>
+                  )}
+                  <li>Reversibly marks linked payment reminders as cancelled.</li>
                   <li>Writes immutable snapshot into <code>audit_log</code> with before and after state.</li>
                 </ul>
               </div>
@@ -135,41 +237,57 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
       {/* View Detail Modal */}
       {viewTarget && (
         <div className="modal-overlay">
-          <div className="modal-card" style={{ maxWidth: 560 }}>
+          <div className="modal-card" style={{ maxWidth: 580 }}>
             <div className="modal-header">
-              <h3>Invoice #{viewTarget.bill_no} Details</h3>
+              <h3>
+                {viewTarget.entryType === 'SALE' ? 'Invoice' : 'Purchase Bill'} #{viewTarget.bill_no} Details
+              </h3>
               <button className="close-btn" onClick={() => setViewTarget(null)}>✕</button>
             </div>
             <div className="modal-body">
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13 }}>
-                <div><span style={{ color: '#7A7268' }}>Customer:</span> <strong>{viewTarget.party_name}</strong></div>
+                <div><span style={{ color: '#7A7268' }}>Party:</span> <strong>{viewTarget.party_name}</strong></div>
                 <div><span style={{ color: '#7A7268' }}>Recorded:</span> <strong>{formatDate(viewTarget.entry_at)}</strong></div>
                 <div><span style={{ color: '#7A7268' }}>Created By:</span> <strong>{viewTarget.creator_name}</strong></div>
-                <div><span style={{ color: '#7A7268' }}>Due Date:</span> <strong>{viewTarget.due_date}</strong></div>
+                <div><span style={{ color: '#7A7268' }}>Due Date:</span> <strong>{viewTarget.due_date || '—'}</strong></div>
                 <div><span style={{ color: '#7A7268' }}>Status:</span> <strong>{viewTarget.status}</strong></div>
                 <div><span style={{ color: '#7A7268' }}>Total Amount:</span> <strong>{formatRupee(viewTarget.total_amount)}</strong></div>
               </div>
 
-              {/* Dynamic Ledger Balances if fetched */}
+              {/* Dynamic Ledger Balances */}
               {viewTarget.balance_before !== undefined && (
                 <div style={{ marginTop: 12, padding: 10, background: '#FAF6F2', borderRadius: 8, border: '1px solid var(--line)' }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7268', textTransform: 'uppercase', marginBottom: 6 }}>
-                    Customer Ledger Impact
+                    {viewTarget.entryType === 'SALE' ? 'Customer Ledger Impact (Receivable)' : 'Supplier Ledger Impact (Payable)'}
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
                     <div style={{ padding: '6px 8px', background: '#fff', borderRadius: 6, border: '1px solid var(--line)' }}>
                       <div style={{ fontSize: 10, color: '#7A7268' }}>Previous Balance</div>
-                      <div style={{ fontWeight: 600, fontSize: 12 }}>{formatRupee(viewTarget.balance_before)}</div>
+                      <div style={{ fontWeight: 600, fontSize: 12 }}>
+                        {formatRupee(Math.abs(viewTarget.balance_before))}
+                      </div>
                     </div>
                     <div style={{ padding: '6px 8px', background: '#fff', borderRadius: 6, border: '1px solid var(--line)' }}>
                       <div style={{ fontSize: 10, color: '#7A7268' }}>This Bill</div>
-                      <div style={{ fontWeight: 600, fontSize: 12, color: '#9B1C31' }}>+{formatRupee(viewTarget.this_bill || viewTarget.total_amount)}</div>
+                      <div style={{ fontWeight: 600, fontSize: 12, color: viewTarget.entryType === 'SALE' ? '#9B1C31' : '#B8893B' }}>
+                        +{formatRupee(viewTarget.total_amount)}
+                      </div>
                     </div>
                     <div style={{ padding: '6px 8px', background: '#fff', borderRadius: 6, border: '1px solid var(--line)' }}>
                       <div style={{ fontSize: 10, color: '#7A7268' }}>Closing Balance</div>
-                      <div style={{ fontWeight: 700, fontSize: 12, color: '#2E7D32' }}>{formatRupee(viewTarget.balance_after ?? (viewTarget.balance_before + viewTarget.total_amount))}</div>
+                      <div style={{ fontWeight: 700, fontSize: 12, color: '#2E7D32' }}>
+                        {formatRupee(Math.abs(viewTarget.balance_after ?? (viewTarget.balance_before + viewTarget.total_amount)))}
+                      </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Narration (Purchase Req 25) */}
+              {(viewTarget as any).narration && (
+                <div style={{ marginTop: 10, padding: 8, background: '#FFFBEB', borderRadius: 6, fontSize: 12, border: '1px solid #FEF3C7' }}>
+                  <span style={{ fontWeight: 600, color: '#92400E' }}>Narration: </span>
+                  <span style={{ color: '#451A03' }}>{(viewTarget as any).narration}</span>
                 </div>
               )}
 
@@ -228,6 +346,7 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
                         <th style={{ padding: 6, textAlign: 'left' }}>Item</th>
                         <th style={{ padding: 6, textAlign: 'right' }}>Pcs</th>
                         <th style={{ padding: 6, textAlign: 'right' }}>Weight</th>
+                        <th style={{ padding: 6, textAlign: 'right' }}>Rate</th>
                         <th style={{ padding: 6, textAlign: 'right' }}>Amount</th>
                       </tr>
                     </thead>
@@ -237,6 +356,7 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
                           <td style={{ padding: 6 }}>{l.item_name || 'Item'}</td>
                           <td style={{ padding: 6, textAlign: 'right' }}>{l.pieces}</td>
                           <td style={{ padding: 6, textAlign: 'right' }}>{l.weight_kg} Kg</td>
+                          <td style={{ padding: 6, textAlign: 'right' }}>{formatRupee(l.rate)}</td>
                           <td style={{ padding: 6, textAlign: 'right' }}>{formatRupee(l.amount)}</td>
                         </tr>
                       ))}

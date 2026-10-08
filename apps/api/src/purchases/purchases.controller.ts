@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { PurchasesService, CreatePurchaseDto, UpdatePurchaseDto } from './purchases.service';
+import { PurchasesService } from './purchases.service';
+import { CreatePurchaseDto, UpdatePurchaseDto } from './purchases.dto';
 import { Roles, CurrentUser } from '../common/decorators';
 import { AuthUser } from '../common/decorators/current-user.decorator';
 
