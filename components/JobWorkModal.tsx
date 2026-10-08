@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Party, Item } from '@/lib/api/types';
 import { createJobWork } from '@/lib/api/services';
 import { formatRupee } from '@/lib/format';
+import { QuickAddPartyDialog } from './QuickAddPartyDialog';
+import { useAltKeyShortcut } from '@/lib/hooks/useAltKeyShortcut';
 
 interface JobWorkModalProps {
   isOpen: boolean;
@@ -22,6 +24,14 @@ export function JobWorkModal({ isOpen, type, onClose, parties, items, onJobWorkC
   const [chargeAmount, setChargeAmount] = useState(0);
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+
+  useAltKeyShortcut({
+    code: 'KeyK',
+    onTrigger: () => setShowQuickAdd(true),
+    enabled: isOpen,
+    isDialogOpen: showQuickAdd,
+  });
 
   if (!isOpen) return null;
 
@@ -58,13 +68,33 @@ export function JobWorkModal({ isOpen, type, onClose, parties, items, onJobWorkC
 
           <div className="modal-body">
             <div className="form-grid">
-              <div className="form-group">
-                <label>Artisan / Karigar</label>
+              <div className="form-group full-width">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                    Artisan / Karigar
+                    <span style={{ fontSize: 11, background: '#FAF6EF', color: '#B8893B', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
+                      Alt+K
+                    </span>
+                  </label>
+                  <button type="button" className="text-button" onClick={() => setShowQuickAdd(true)}>
+                    ＋ Quick Add Karigar [Alt+K]
+                  </button>
+                </div>
                 <select className="form-select" value={partyId} onChange={(e) => setPartyId(e.target.value)} required>
                   {parties.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <option key={p.id} value={p.id}>{p.name} {p.whatsapp_number ? `(${p.whatsapp_number})` : ''}</option>
                   ))}
                 </select>
+
+                <QuickAddPartyDialog
+                  isOpen={showQuickAdd}
+                  onClose={() => setShowQuickAdd(false)}
+                  type="KARIGAR"
+                  onSuccess={(newParty) => {
+                    parties.push(newParty);
+                    setPartyId(newParty.id);
+                  }}
+                />
               </div>
 
               <div className="form-group">

@@ -2,8 +2,10 @@
 
 import React, { useState } from 'react';
 import { Party, Item } from '@/lib/api/types';
-import { createSale, sendBillOnWhatsApp, createParty } from '@/lib/api/services';
+import { createSale, sendBillOnWhatsApp } from '@/lib/api/services';
 import { formatRupee } from '@/lib/format';
+import { QuickAddPartyDialog } from './QuickAddPartyDialog';
+import { useAltKeyShortcut } from '@/lib/hooks/useAltKeyShortcut';
 
 interface NewSaleModalProps {
   isOpen: boolean;
@@ -25,10 +27,15 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
     { item_id: items[0]?.id || '', pieces: 1, weight_kg: 0.150, rate: 72000, amount: 10800 },
   ]);
 
-  // Quick add party state
+  // Quick add customer dialog state & Alt+C shortcut
   const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [newPartyName, setNewPartyName] = useState('');
-  const [newPartyPhone, setNewPartyPhone] = useState('+91');
+
+  useAltKeyShortcut({
+    code: 'KeyC',
+    onTrigger: () => setShowQuickAdd(true),
+    enabled: isOpen,
+    isDialogOpen: showQuickAdd,
+  });
 
   // Success state
   const [successSale, setSuccessSale] = useState<any | null>(null);
@@ -81,22 +88,6 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
     }
   };
 
-  const handleQuickAddParty = async () => {
-    if (!newPartyName.trim()) return;
-    try {
-      const p = await createParty({
-        name: newPartyName.trim(),
-        type: 'CUSTOMER',
-        whatsapp_number: newPartyPhone.trim(),
-      });
-      parties.push(p);
-      setPartyId(p.id);
-      setShowQuickAdd(false);
-      setNewPartyName('');
-    } catch (err: any) {
-      alert(err.message || 'Error creating party');
-    }
-  };
 
   const handleSendWhatsApp = async () => {
     if (!successSale) return;
@@ -159,25 +150,32 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
             <div className="modal-body">
               <div className="form-grid">
                 <div className="form-group full-width">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label>Customer Party</label>
-                    <button type="button" className="text-button" onClick={() => setShowQuickAdd(!showQuickAdd)}>
-                      {showQuickAdd ? 'Cancel Quick Add' : '＋ Quick Add Party'}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      Customer Party
+                      <span style={{ fontSize: 11, background: '#FAF6EF', color: '#B8893B', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
+                        Alt+C
+                      </span>
+                    </label>
+                    <button type="button" className="text-button" onClick={() => setShowQuickAdd(true)}>
+                      ＋ Quick Add Customer [Alt+C]
                     </button>
                   </div>
-                  {showQuickAdd ? (
-                    <div style={{ background: '#FBF7F2', padding: 12, borderRadius: 8, marginTop: 6, display: 'flex', gap: 8 }}>
-                      <input className="form-input" placeholder="Party Name" value={newPartyName} onChange={(e) => setNewPartyName(e.target.value)} />
-                      <input className="form-input" placeholder="+91..." value={newPartyPhone} onChange={(e) => setNewPartyPhone(e.target.value)} />
-                      <button type="button" className="primary-button" onClick={handleQuickAddParty}>Add</button>
-                    </div>
-                  ) : (
-                    <select className="form-select" value={partyId} onChange={(e) => setPartyId(e.target.value)} required>
-                      {parties.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name} {p.whatsapp_number ? `(${p.whatsapp_number})` : ''}</option>
-                      ))}
-                    </select>
-                  )}
+                  <select className="form-select" value={partyId} onChange={(e) => setPartyId(e.target.value)} required>
+                    {parties.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} {p.whatsapp_number ? `(${p.whatsapp_number})` : ''}</option>
+                    ))}
+                  </select>
+
+                  <QuickAddPartyDialog
+                    isOpen={showQuickAdd}
+                    onClose={() => setShowQuickAdd(false)}
+                    type="CUSTOMER"
+                    onSuccess={(newParty) => {
+                      parties.push(newParty);
+                      setPartyId(newParty.id);
+                    }}
+                  />
                 </div>
 
                 <div className="form-group">

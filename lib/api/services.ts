@@ -131,7 +131,14 @@ export async function listParties(search?: string, type?: string): Promise<Party
   return apiClient<Party[]>(`/parties?${q.toString()}`);
 }
 
-export async function createParty(dto: { name: string; type: string; whatsapp_number?: string; address?: string; opening_balance?: number }): Promise<Party> {
+export async function createParty(dto: {
+  name: string;
+  type: string;
+  whatsapp_number?: string;
+  address?: string;
+  work_types?: string;
+  opening_balance?: number;
+}): Promise<Party> {
   if (USE_MOCK) {
     const newP: Party = {
       id: `p_${Date.now()}`,
@@ -139,6 +146,7 @@ export async function createParty(dto: { name: string; type: string; whatsapp_nu
       type: dto.type as any,
       whatsapp_number: dto.whatsapp_number,
       address: dto.address,
+      work_types: dto.work_types,
       opening_balance: dto.opening_balance || 0,
       current_balance: dto.opening_balance || 0,
       is_active: true,

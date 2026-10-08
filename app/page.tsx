@@ -188,13 +188,15 @@ export default function Page() {
           </div>
         </header>
 
-        {/* Mobile Role Switcher Banner */}
-        <div className="mobile-role">
-          <span>Demo Role Preview:</span>
-          <button onClick={() => handleRoleSwitch(role === 'Owner' ? 'Staff' : 'Owner')}>
-            {role} · Switch Role ⇄
-          </button>
-        </div>
+        {/* Mobile Role Switcher Banner (Dev only) */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mobile-role">
+            <span>Demo Role Preview:</span>
+            <button onClick={() => handleRoleSwitch(role === 'Owner' ? 'Staff' : 'Owner')}>
+              {role} · Switch Role ⇄
+            </button>
+          </div>
+        )}
 
         {/* Screen Switcher */}
         <div style={{ marginTop: 24 }}>

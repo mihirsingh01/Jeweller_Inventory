@@ -96,7 +96,7 @@ export class PurchasesService {
 
     const purchase = purchaseRes.rows[0];
     if (user.role === 'STAFF' && purchase.created_by !== user.id) {
-      throw new ForbiddenException('You can only view your own entries');
+      throw new NotFoundException('Purchase entry not found');
     }
 
     const linesRes = await this.db.query(

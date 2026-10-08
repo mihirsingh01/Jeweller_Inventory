@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS parties (
     type party_type NOT NULL,
     whatsapp_number TEXT,
     address TEXT,
+    work_types TEXT,
     opening_balance NUMERIC(14,2) NOT NULL DEFAULT 0,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),

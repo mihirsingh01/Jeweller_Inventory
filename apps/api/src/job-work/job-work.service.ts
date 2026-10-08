@@ -76,7 +76,7 @@ export class JobWorkService {
     }
     const jw = res.rows[0];
     if (user.role === 'STAFF' && jw.created_by !== user.id) {
-      throw new ForbiddenException('You can only view your own entries');
+      throw new NotFoundException('Job work entry not found');
     }
     return jw;
   }

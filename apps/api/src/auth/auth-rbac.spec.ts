@@ -1,4 +1,4 @@
-import { ForbiddenException, UnauthorizedException, BadRequestException, ExecutionContext } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException, BadRequestException, NotFoundException, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { JwtStrategy } from './jwt.strategy';
@@ -105,8 +105,31 @@ describe('Auth, RBAC, and Staff Isolation Tests', () => {
         ],
       });
 
-      // Attempt by Staff A to read Staff B's entry
-      await expect(salesService.findOne('sale-123', staffA)).rejects.toThrow(ForbiddenException);
+      // Attempt by Staff A to read Staff B's entry returns 404 (not 403) to prevent enumeration
+      await expect(salesService.findOne('sale-123', staffA)).rejects.toThrow(NotFoundException);
+    });
+
+    it('OWNER can successfully read entries created by any staff member', async () => {
+      const owner = { id: 'owner-id', name: 'Mihir (Owner)', username: 'mihir', role: 'OWNER' as const, isActive: true };
+      const staffBId = 'staff-b-id';
+
+      // Mock database returning sale created by Staff B
+      (mockDbService.query as jest.Mock)
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              id: 'sale-123',
+              created_by: staffBId,
+              is_deleted: false,
+              total_amount: 5000,
+            },
+          ],
+        })
+        .mockResolvedValueOnce({ rows: [] }); // lines query
+
+      const result = await salesService.findOne('sale-123', owner);
+      expect(result.id).toBe('sale-123');
+      expect(result.created_by).toBe(staffBId);
     });
 
     it('STAFF listing sales only receives queries scoped to their own created_by ID', async () => {

@@ -82,7 +82,7 @@ export class SalesService {
 
     const sale = saleRes.rows[0];
     if (user.role === 'STAFF' && sale.created_by !== user.id) {
-      throw new ForbiddenException('You can only view your own entries');
+      throw new NotFoundException('Sale not found');
     }
 
     const linesRes = await this.db.query(
@@ -369,6 +369,12 @@ export class SalesService {
       await client.query(
         `UPDATE sales SET is_deleted = true, deleted_at = now(), deleted_by = $1 WHERE id = $2`,
         [user.id, id],
+      );
+
+      // Cancel linked pending reminders in the same transaction
+      await client.query(
+        `UPDATE reminder_log SET status = 'CANCELLED' WHERE sale_id = $1`,
+        [id],
       );
 
       // Write to immutable audit_log

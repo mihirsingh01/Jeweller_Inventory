@@ -4,12 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { AuthUser } from '../common/decorators/current-user.decorator';
 
 export interface CreatePartyDto {
   name: string;
   type: 'CUSTOMER' | 'SUPPLIER' | 'BOTH';
   whatsapp_number?: string;
   address?: string;
+  work_types?: string;
   opening_balance?: number;
 }
 
@@ -18,6 +20,7 @@ export interface UpdatePartyDto {
   type?: 'CUSTOMER' | 'SUPPLIER' | 'BOTH';
   whatsapp_number?: string;
   address?: string;
+  work_types?: string;
   opening_balance?: number;
   is_active?: boolean;
 }
@@ -26,24 +29,56 @@ export interface UpdatePartyDto {
 export class PartiesService {
   constructor(private readonly db: DatabaseService) {}
 
-  private validateWhatsApp(phone?: string) {
-    if (!phone) return;
-    // E.164 international format validation (+ followed by 7-15 digits)
-    const e164Regex = /^\+[1-9]\d{6,14}$/;
-    if (!e164Regex.test(phone.trim())) {
-      throw new BadRequestException(
-        'WhatsApp number must be in E.164 international format (e.g. +919829012345)',
-      );
+  validateAndNormalizeIndianMobile(phone?: string): string | null {
+    if (!phone || !phone.trim()) return null;
+    const clean = phone.trim().replace(/[\s\-\(\)]/g, '');
+
+    // 10-digit Indian mobile starting with 6, 7, 8, 9
+    if (/^[6-9]\d{9}$/.test(clean)) {
+      return `+91${clean}`;
     }
+    // 0 followed by 10 digits
+    if (/^0[6-9]\d{9}$/.test(clean)) {
+      return `+91${clean.slice(1)}`;
+    }
+    // +91 followed by 10 digits
+    if (/^\+91[6-9]\d{9}$/.test(clean)) {
+      return clean;
+    }
+    // General E.164 international format
+    const e164Regex = /^\+[1-9]\d{6,14}$/;
+    if (e164Regex.test(clean)) {
+      return clean;
+    }
+
+    throw new BadRequestException(
+      'Invalid mobile number. Please enter a 10-digit Indian mobile (e.g. 9829012345 or +919829012345)',
+    );
   }
 
-  async findAll(search?: string, type?: string, limit = 50, offset = 0) {
+  maskMobile(phone?: string, isOwner = false, reveal = false): string | null {
+    if (!phone) return null;
+    if (isOwner && reveal) return phone;
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length <= 4) return '••••••';
+    const last4 = digits.slice(-4);
+    return `••••••${last4}`;
+  }
+
+  async findAll(
+    user?: AuthUser,
+    search?: string,
+    type?: string,
+    revealPhone = false,
+    limit = 50,
+    offset = 0,
+  ) {
     const conditions: string[] = ['is_active = true'];
     const params: any[] = [];
     let idx = 1;
 
     if (search) {
-      conditions.push(`(name ILIKE $${idx} OR whatsapp_number ILIKE $${idx})`);
+      conditions.push(`(name ILIKE $${idx} OR whatsapp_number ILIKE $${idx} OR address ILIKE $${idx})`);
       params.push(`%${search}%`);
       idx++;
     }
@@ -56,7 +91,7 @@ export class PartiesService {
 
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const query = `
-      SELECT id, name, type, whatsapp_number, address, opening_balance, is_active, created_at
+      SELECT id, name, type, whatsapp_number, address, work_types, opening_balance, is_active, created_at, created_by
       FROM parties
       ${whereClause}
       ORDER BY name ASC
@@ -65,10 +100,16 @@ export class PartiesService {
     params.push(limit, offset);
 
     const res = await this.db.query(query, params);
-    return res.rows;
+    const isOwner = user?.role === 'OWNER';
+
+    return res.rows.map((party) => ({
+      ...party,
+      whatsapp_number: this.maskMobile(party.whatsapp_number, isOwner, revealPhone),
+      raw_phone_masked: !isOwner || !revealPhone,
+    }));
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: AuthUser, revealPhone = false) {
     const res = await this.db.query(
       `SELECT p.*,
         COALESCE(
@@ -87,30 +128,58 @@ export class PartiesService {
     if (res.rows.length === 0) {
       throw new NotFoundException('Party not found');
     }
-    return res.rows[0];
+
+    const party = res.rows[0];
+    const isOwner = user?.role === 'OWNER';
+
+    return {
+      ...party,
+      whatsapp_number: this.maskMobile(party.whatsapp_number, isOwner, revealPhone),
+      raw_phone_masked: !isOwner || !revealPhone,
+    };
   }
 
-  async create(dto: CreatePartyDto, userId: string) {
-    this.validateWhatsApp(dto.whatsapp_number);
+  async create(dto: CreatePartyDto, user: AuthUser) {
+    const normalizedMobile = this.validateAndNormalizeIndianMobile(dto.whatsapp_number);
 
     const res = await this.db.query(
-      `INSERT INTO parties (name, type, whatsapp_number, address, opening_balance, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO parties (name, type, whatsapp_number, address, work_types, opening_balance, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         dto.name.trim(),
         dto.type,
-        dto.whatsapp_number ? dto.whatsapp_number.trim() : null,
-        dto.address || null,
+        normalizedMobile,
+        dto.address ? dto.address.trim() : null,
+        dto.work_types ? dto.work_types.trim() : null,
         dto.opening_balance || 0,
-        userId,
+        user.id,
       ],
     );
-    return res.rows[0];
+
+    const party = res.rows[0];
+
+    // Write audit log row
+    await this.db.query(
+      `INSERT INTO audit_log (actor_id, action, table_name, record_id, before_data, after_data)
+       VALUES ($1, 'CREATE', 'parties', $2, null, $3)`,
+      [user.id, party.id, JSON.stringify(party)],
+    );
+
+    const isOwner = user.role === 'OWNER';
+    return {
+      ...party,
+      whatsapp_number: this.maskMobile(party.whatsapp_number, isOwner, false),
+      raw_phone_masked: true,
+    };
   }
 
-  async update(id: string, dto: UpdatePartyDto) {
-    this.validateWhatsApp(dto.whatsapp_number);
+  async update(id: string, dto: UpdatePartyDto, user: AuthUser) {
+    const oldPartyRes = await this.db.query(`SELECT * FROM parties WHERE id = $1`, [id]);
+    if (oldPartyRes.rows.length === 0) {
+      throw new NotFoundException('Party not found');
+    }
+    const oldParty = oldPartyRes.rows[0];
 
     const updates: string[] = [];
     const values: any[] = [];
@@ -125,12 +194,17 @@ export class PartiesService {
       values.push(dto.type);
     }
     if (dto.whatsapp_number !== undefined) {
+      const normalized = this.validateAndNormalizeIndianMobile(dto.whatsapp_number);
       updates.push(`whatsapp_number = $${idx++}`);
-      values.push(dto.whatsapp_number ? dto.whatsapp_number.trim() : null);
+      values.push(normalized);
     }
     if (dto.address !== undefined) {
       updates.push(`address = $${idx++}`);
-      values.push(dto.address);
+      values.push(dto.address ? dto.address.trim() : null);
+    }
+    if (dto.work_types !== undefined) {
+      updates.push(`work_types = $${idx++}`);
+      values.push(dto.work_types ? dto.work_types.trim() : null);
     }
     if (dto.opening_balance !== undefined) {
       updates.push(`opening_balance = $${idx++}`);
@@ -150,10 +224,20 @@ export class PartiesService {
       `UPDATE parties SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`,
       values,
     );
+    const updatedParty = res.rows[0];
 
-    if (res.rows.length === 0) {
-      throw new NotFoundException('Party not found');
-    }
-    return res.rows[0];
+    // Write audit log row
+    await this.db.query(
+      `INSERT INTO audit_log (actor_id, action, table_name, record_id, before_data, after_data)
+       VALUES ($1, 'UPDATE', 'parties', $2, $3, $4)`,
+      [user.id, id, JSON.stringify(oldParty), JSON.stringify(updatedParty)],
+    );
+
+    const isOwner = user.role === 'OWNER';
+    return {
+      ...updatedParty,
+      whatsapp_number: this.maskMobile(updatedParty.whatsapp_number, isOwner, false),
+      raw_phone_masked: true,
+    };
   }
 }

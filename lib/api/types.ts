@@ -20,6 +20,8 @@ export interface Party {
   type: PartyType;
   whatsapp_number?: string;
   address?: string;
+  work_types?: string;
+  raw_phone_masked?: boolean;
   opening_balance: number;
   current_balance?: number;
   is_active: boolean;

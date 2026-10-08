@@ -118,7 +118,7 @@ export class VouchersService {
 
     const voucher = res.rows[0];
     if (user.role === 'STAFF' && voucher.created_by !== user.id) {
-      throw new ForbiddenException('Staff can only view self-created vouchers');
+      throw new NotFoundException('Voucher not found');
     }
 
     return voucher;

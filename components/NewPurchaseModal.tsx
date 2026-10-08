@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Party, Item } from '@/lib/api/types';
 import { createPurchase } from '@/lib/api/services';
 import { formatRupee } from '@/lib/format';
+import { QuickAddPartyDialog } from './QuickAddPartyDialog';
+import { useAltKeyShortcut } from '@/lib/hooks/useAltKeyShortcut';
 
 interface NewPurchaseModalProps {
   isOpen: boolean;
@@ -21,6 +23,14 @@ export function NewPurchaseModal({ isOpen, onClose, parties, items, onPurchaseCr
     { item_id: items[0]?.id || '', pieces: 5, weight_kg: 0.500, rate: 70000, amount: 35000 },
   ]);
   const [loading, setLoading] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+
+  useAltKeyShortcut({
+    code: 'KeyS',
+    onTrigger: () => setShowQuickAdd(true),
+    enabled: isOpen,
+    isDialogOpen: showQuickAdd,
+  });
 
   if (!isOpen) return null;
 
@@ -70,12 +80,32 @@ export function NewPurchaseModal({ isOpen, onClose, parties, items, onPurchaseCr
           <div className="modal-body">
             <div className="form-grid">
               <div className="form-group full-width">
-                <label>Supplier Party</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    Supplier Party
+                    <span style={{ fontSize: 11, background: '#FAF6EF', color: '#B8893B', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
+                      Alt+S
+                    </span>
+                  </label>
+                  <button type="button" className="text-button" onClick={() => setShowQuickAdd(true)}>
+                    ＋ Quick Add Supplier [Alt+S]
+                  </button>
+                </div>
                 <select className="form-select" value={partyId} onChange={(e) => setPartyId(e.target.value)} required>
                   {parties.map((p) => (
                     <option key={p.id} value={p.id}>{p.name} ({p.type})</option>
                   ))}
                 </select>
+
+                <QuickAddPartyDialog
+                  isOpen={showQuickAdd}
+                  onClose={() => setShowQuickAdd(false)}
+                  type="SUPPLIER"
+                  onSuccess={(newParty) => {
+                    parties.push(newParty);
+                    setPartyId(newParty.id);
+                  }}
+                />
               </div>
 
               <div className="form-group">

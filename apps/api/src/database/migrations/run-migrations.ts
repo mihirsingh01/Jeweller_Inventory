@@ -44,6 +44,17 @@ async function runMigrations() {
       console.warn(`Init SQL not found at ${initSqlPath}`);
     }
 
+    // Migration 002: Add work_types column to parties table if missing
+    const { rows: m2Rows } = await pool.query('SELECT name FROM _migrations WHERE name = $1', ['002_add_party_work_types']);
+    if (m2Rows.length === 0) {
+      console.log('Applying 002_add_party_work_types migration...');
+      await pool.query('ALTER TABLE parties ADD COLUMN IF NOT EXISTS work_types TEXT;');
+      await pool.query('INSERT INTO _migrations (name) VALUES ($1)', ['002_add_party_work_types']);
+      console.log('✓ 002_add_party_work_types applied successfully.');
+    } else {
+      console.log('✓ 002_add_party_work_types has already been applied.');
+    }
+
     console.log('All migrations completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);
