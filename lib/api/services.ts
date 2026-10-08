@@ -994,9 +994,34 @@ export async function updateReminderStatus(
   });
 }
 
-export async function listAuditLog(): Promise<AuditLogRow[]> {
-  if (USE_MOCK) return mockAuditLogs;
-  return apiClient<AuditLogRow[]>('/audit');
+export interface AuditLogFilter {
+  actor_id?: string;
+  table_name?: string;
+  action?: string;
+  record_id?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export async function listAuditLog(filter?: AuditLogFilter): Promise<AuditLogRow[]> {
+  if (USE_MOCK) {
+    let list = [...mockAuditLogs];
+    if (filter?.action) list = list.filter((l) => l.action === filter.action);
+    if (filter?.table_name) list = list.filter((l) => l.table_name === filter.table_name);
+    if (filter?.actor_id) list = list.filter((l) => l.actor_id === filter.actor_id);
+    if (filter?.record_id) list = list.filter((l) => l.record_id === filter.record_id);
+    return list;
+  }
+  const params = new URLSearchParams();
+  if (filter?.actor_id) params.set('actor_id', filter.actor_id);
+  if (filter?.table_name) params.set('table_name', filter.table_name);
+  if (filter?.action) params.set('action', filter.action);
+  if (filter?.record_id) params.set('record_id', filter.record_id);
+  if (filter?.startDate) params.set('startDate', filter.startDate);
+  if (filter?.endDate) params.set('endDate', filter.endDate);
+  const q = params.toString() ? `?${params.toString()}` : '';
+  const res = await apiClient<any>(`/audit${q}`);
+  return Array.isArray(res) ? res : res.logs || [];
 }
 
 export async function sendBillOnWhatsApp(saleId: string): Promise<any> {

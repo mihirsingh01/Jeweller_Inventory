@@ -11,6 +11,7 @@ export class AuditService {
     recordId?: string,
     startDate?: string,
     endDate?: string,
+    action?: string,
     limit = 50,
     offset = 0,
   ) {
@@ -26,6 +27,11 @@ export class AuditService {
     if (tableName) {
       conditions.push(`al.table_name = $${idx++}`);
       params.push(tableName);
+    }
+
+    if (action) {
+      conditions.push(`al.action = $${idx++}`);
+      params.push(action);
     }
 
     if (recordId) {
