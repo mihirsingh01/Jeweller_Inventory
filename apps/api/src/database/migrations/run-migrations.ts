@@ -185,6 +185,19 @@ async function runMigrations() {
       console.log('✓ 006_job_work_lines_and_sequence has already been applied.');
     }
 
+    // Migration 007: Add money_vouchers notes and idempotency_key
+    if (!appliedNames.has('007_vouchers_notes_and_idempotency')) {
+      console.log('Running migration: 007_vouchers_notes_and_idempotency...');
+      await pool.query(`
+        ALTER TABLE money_vouchers ADD COLUMN IF NOT EXISTS notes TEXT;
+        ALTER TABLE money_vouchers ADD COLUMN IF NOT EXISTS idempotency_key UUID UNIQUE;
+      `);
+      await pool.query('INSERT INTO _migrations (name) VALUES ($1)', ['007_vouchers_notes_and_idempotency']);
+      console.log('✓ 007_vouchers_notes_and_idempotency applied successfully.');
+    } else {
+      console.log('✓ 007_vouchers_notes_and_idempotency has already been applied.');
+    }
+
     console.log('All migrations completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);

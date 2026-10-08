@@ -265,17 +265,35 @@ export interface VoucherAllocation {
   amount: number;
 }
 
+export interface CreateVoucherInput {
+  kind: 'RECEIPT' | 'PAYMENT';
+  party_id: string;
+  mode: PayMode;
+  bank_account_id?: string;
+  amount: number;
+  reference_no?: string;
+  notes?: string;
+  idempotency_key?: string;
+  allocations?: VoucherAllocation[];
+}
+
 export interface MoneyVoucher {
   id: string;
   voucher_no: number;
   kind: 'RECEIPT' | 'PAYMENT';
   party_id: string;
   party_name?: string;
+  party_type?: 'CUSTOMER' | 'SUPPLIER' | 'KARIGAR';
   mode: PayMode;
   bank_account_id?: string;
   bank_name?: string;
   amount: number;
   reference_no?: string;
+  notes?: string;
+  idempotency_key?: string;
+  balance_before?: number;
+  this_voucher?: number;
+  balance_after?: number;
   entry_at: string;
   created_by: string;
   creator_name?: string;

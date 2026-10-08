@@ -54,10 +54,17 @@ Running log for the implementation phases defined in `Claude.pdf`.
   - Labour charges per line posted to Karigar ledger as payable on Receive Back.
   - Stock movements correctly updated: leaves workshop on Issue, returns on Receive.
   - Full atomic transactions, staff isolation scoping, and soft-delete reversal safeguards.
-- [ ] **Phase 8: Receipt and Payment with Cash/Bank and Balances** (Req 34–39, 46)
-  - Explain existing Cash/Bank design.
-  - Receipt (money IN) and Payment (money OUT) with single cash/bank ledger posting.
-  - Real-time balance updates (Balance Before | This Entry | Closing Balance).
+- [x] **Phase 8: Receipt and Payment with Cash/Bank and Balances** (Req 34–39, 46)
+  - Pre-requisite architectural review of existing Cash/Bank books and ledger design explained to user.
+  - Receipt (money IN) and Payment (money OUT) recorded with exactly ONE atomic cash/bank update (authoritative query over non-deleted `money_vouchers`).
+  - Added migration `007_vouchers_notes_and_idempotency` (`idempotency_key UUID UNIQUE`, `notes TEXT`).
+  - Dynamic party ledger calculation on `findOne`: `balance_before | this_voucher | balance_after`.
+  - Frontend live 3-column balance card: `Previous Balance | This Entry | Closing Balance` (with Dr/Cr indicators).
+  - Non-blocking Advance Payment warning banner (Req 36) when payment exceeds payable balance.
+  - Bill allocation table across unpaid invoices with zero-float integer paise validation.
+  - Save shortcut (`Ctrl+S`, `Cmd+S`, `Ctrl+Enter`) with in-flight lock, UUID idempotency key, and backspace navigation guard.
+  - Outbox notification event `VOUCHER_CREATED` and audit log snapshots.
+  - Automated unit test suite `test/voucher-calculations.test.ts` (7/7 tests passing).
 - [ ] **Phase 9: Reminders Module Extension** (Req 5, 14, 24)
   - Link reminders to transactions (Sales/Purchases) and support manual reminders.
   - Filters: Due today, Overdue, Upcoming, Completed, Cancelled.
@@ -80,8 +87,8 @@ Running log for the implementation phases defined in `Claude.pdf`.
 ---
 
 ## Current Status
-- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder), Phase 6 (Purchase Bill with Accounts Payable, Narration, and Charges), Phase 7 (Job Work with Issue Grid, Linked Receive Lines, Difference Calculation, and Labour Charges).
-- **Next Phase:** Phase 8 — Receipt and Payment with Cash/Bank and Balances (Req 34–39, 46).
+- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder), Phase 6 (Purchase Bill with Accounts Payable, Narration, and Charges), Phase 7 (Job Work with Issue Grid, Linked Receive Lines, Difference Calculation, and Labour Charges), Phase 8 (Receipt and Payment Vouchers with Cash/Bank Books, Live Balances, and Advance Warnings).
+- **Next Phase:** Phase 9 — Reminders Module Extension (Req 5, 14, 24).
 
 
 

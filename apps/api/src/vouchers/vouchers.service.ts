@@ -85,7 +85,7 @@ export class VouchersService {
 
   async findOne(id: string, user: AuthUser) {
     const query = `
-      SELECT mv.*, p.name AS party_name, p.whatsapp_number AS party_whatsapp,
+      SELECT mv.*, p.name AS party_name, p.type AS party_type, p.whatsapp_number AS party_whatsapp,
              b.name AS bank_name, u.name AS creator_name,
              COALESCE(
                (SELECT JSON_AGG(JSON_BUILD_OBJECT(
@@ -121,10 +121,54 @@ export class VouchersService {
       throw new NotFoundException('Voucher not found');
     }
 
+    // Dynamic historical party ledger balance (Req 46)
+    const ledgerEntryRes = await this.db.query(
+      `SELECT id FROM ledger_entries 
+       WHERE source_type = 'VOUCHER' AND source_id = $1 
+       ORDER BY id ASC LIMIT 1`,
+      [id],
+    );
+
+    if (ledgerEntryRes.rows.length > 0) {
+      const ledgerEntryId = ledgerEntryRes.rows[0].id;
+      const isCustomer = voucher.party_type === 'CUSTOMER';
+      // For customer: debit - credit is receivable balance (Dr)
+      // For supplier/karigar: credit - debit is payable balance (Cr)
+      const balanceExpr = isCustomer ? 'le.debit - le.credit' : 'le.credit - le.debit';
+      const priorBalRes = await this.db.query(
+        `SELECT p.opening_balance,
+                COALESCE(SUM(${balanceExpr}), 0) AS prior_diff
+         FROM parties p
+         LEFT JOIN ledger_entries le ON le.party_id = p.id AND le.id < $1
+         WHERE p.id = $2
+         GROUP BY p.id, p.opening_balance`,
+        [ledgerEntryId, voucher.party_id],
+      );
+
+      if (priorBalRes.rows.length > 0) {
+        const opening = Number(priorBalRes.rows[0].opening_balance || 0);
+        const priorDiff = Number(priorBalRes.rows[0].prior_diff || 0);
+        voucher.balance_before = opening + priorDiff;
+        voucher.this_voucher = Number(voucher.amount);
+        // Receipt reduces customer receivable balance; Payment reduces supplier payable balance
+        voucher.balance_after = voucher.balance_before - voucher.this_voucher;
+      }
+    }
+
     return voucher;
   }
 
   async create(dto: CreateVoucherDto, user: AuthUser) {
+    if (dto.idempotency_key) {
+      const existing = await this.db.query(
+        `SELECT id FROM money_vouchers WHERE idempotency_key = $1 AND is_deleted = false`,
+        [dto.idempotency_key],
+      );
+      if (existing.rows.length > 0) {
+        return this.findOne(existing.rows[0].id, user);
+      }
+    }
+
     if (dto.mode === 'BANK') {
       if (!dto.bank_account_id) {
         throw new BadRequestException('A bank account is required when payment mode is BANK');
@@ -154,8 +198,8 @@ export class VouchersService {
     const savedVoucher = await this.db.withTransaction(async (client) => {
       // 1. Insert Money Voucher (entry_at set by PostgreSQL DEFAULT now())
       const voucherRes = await client.query(
-        `INSERT INTO money_vouchers (kind, party_id, mode, bank_account_id, amount, reference_no, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO money_vouchers (kind, party_id, mode, bank_account_id, amount, reference_no, notes, idempotency_key, created_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
           dto.kind,
@@ -164,6 +208,8 @@ export class VouchersService {
           dto.mode === 'BANK' ? dto.bank_account_id : null,
           dto.amount,
           dto.reference_no || null,
+          dto.notes || null,
+          dto.idempotency_key || null,
           user.id,
         ],
       );
@@ -268,6 +314,34 @@ export class VouchersService {
         }
       }
 
+      // 4. Audit Log
+      await client.query(
+        `INSERT INTO audit_log (actor_id, action, table_name, record_id, before_data, after_data)
+         VALUES ($1, 'CREATE', 'money_vouchers', $2, NULL, $3)`,
+        [user.id, voucher.id, JSON.stringify(voucher)],
+      );
+
+      // 5. Notification Outbox Row (Req 37)
+      await client.query(
+        `INSERT INTO notification_outbox (event_type, entity_type, entity_id, recipient_phone, payload, status)
+         VALUES ($1, 'VOUCHER', $2, $3, $4, 'PENDING')`,
+        [
+          'VOUCHER_CREATED',
+          voucher.id,
+          party.whatsapp_number || null,
+          JSON.stringify({
+            voucher_id: voucher.id,
+            voucher_no: voucher.voucher_no,
+            kind: voucher.kind,
+            amount: voucher.amount,
+            mode: voucher.mode,
+            party_id: voucher.party_id,
+            party_name: party.name,
+            reference_no: voucher.reference_no,
+          }),
+        ],
+      );
+
       return voucher;
     });
 
@@ -356,13 +430,14 @@ export class VouchersService {
 
       const newAmount = dto.amount !== undefined ? dto.amount : parseFloat(original.amount);
       const newRef = dto.reference_no !== undefined ? dto.reference_no : original.reference_no;
+      const newNotes = dto.notes !== undefined ? dto.notes : original.notes;
 
       const updatedVoucherRes = await client.query(
         `UPDATE money_vouchers
-         SET kind = $1, party_id = $2, mode = $3, bank_account_id = $4, amount = $5, reference_no = $6
-         WHERE id = $7
+         SET kind = $1, party_id = $2, mode = $3, bank_account_id = $4, amount = $5, reference_no = $6, notes = $7
+         WHERE id = $8
          RETURNING *`,
-        [newKind, newPartyId, newMode, newBankAccountId, newAmount, newRef, id],
+        [newKind, newPartyId, newMode, newBankAccountId, newAmount, newRef, newNotes, id],
       );
       const updatedVoucher = updatedVoucherRes.rows[0];
 

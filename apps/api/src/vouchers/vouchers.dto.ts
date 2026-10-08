@@ -51,6 +51,14 @@ export class CreateVoucherDto {
   reference_no?: string;
 
   @IsOptional()
+  @IsString()
+  notes?: string;
+
+  @IsOptional()
+  @IsUUID()
+  idempotency_key?: string;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AllocationItemDto)
@@ -82,6 +90,10 @@ export class UpdateVoucherDto {
   @IsOptional()
   @IsString()
   reference_no?: string;
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 
   @IsOptional()
   @IsArray()
