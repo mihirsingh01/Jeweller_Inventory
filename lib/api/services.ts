@@ -9,6 +9,7 @@ import {
   JobWorkEntry,
   MoneyVoucher,
   ReminderSettings,
+  PaymentReminder,
   AuditLogRow,
   DashboardStats,
   CreateItemDto,
@@ -81,6 +82,43 @@ let mockSettings: ReminderSettings = {
   owner_whatsapp: '+919690000000',
   is_active: true,
 };
+
+let mockReminders: PaymentReminder[] = [
+  {
+    id: 'rem-1',
+    party_id: 'p1',
+    party_name: 'Rajasthan Jewellers',
+    party_type: 'CUSTOMER',
+    party_phone: '••••••4012',
+    sale_id: 's2',
+    sale_bill_no: 1047,
+    sale_total: 275000,
+    reminder_date: '2026-09-26',
+    amount: 275000,
+    notes: 'Invoice #1047 overdue payment follow-up',
+    status: 'PENDING',
+    created_by: 'u1',
+    creator_name: 'Mihir Sharma',
+    created_at: '2026-09-18T10:00:00Z',
+  },
+  {
+    id: 'rem-2',
+    party_id: 'p2',
+    party_name: 'Omkar Bullion Mart',
+    party_type: 'SUPPLIER',
+    party_phone: '••••••8821',
+    purchase_id: 'pu1',
+    purchase_bill_no: 1008,
+    purchase_total: 485000,
+    reminder_date: '2026-10-10',
+    amount: 485000,
+    notes: 'Purchase settlement reminder',
+    status: 'PENDING',
+    created_by: 'u1',
+    creator_name: 'Mihir Sharma',
+    created_at: '2026-09-28T11:00:00Z',
+  },
+];
 
 let mockAuditLogs: AuditLogRow[] = [
   { id: 101, actor_id: 'u1', actor_name: 'Mihir Sharma', action: 'CREATE', table_name: 'users', record_id: 'u2', after_data: { username: 'amit', role: 'STAFF' }, at: '2026-09-05T10:00:00Z' },
@@ -751,6 +789,90 @@ export async function triggerDailyReminders(): Promise<any> {
     };
   }
   return apiClient('/reminders/trigger', { method: 'POST' });
+}
+
+export async function listReminders(query?: {
+  filter?: string;
+  status?: string;
+  party_id?: string;
+}): Promise<PaymentReminder[]> {
+  if (USE_MOCK) {
+    let list = [...mockReminders];
+    if (query?.party_id) {
+      list = list.filter((r) => r.party_id === query.party_id);
+    }
+    if (query?.status) {
+      list = list.filter((r) => r.status === query.status);
+    }
+    const today = new Date().toISOString().split('T')[0];
+    if (query?.filter === 'TODAY') {
+      list = list.filter((r) => r.reminder_date === today);
+    } else if (query?.filter === 'OVERDUE') {
+      list = list.filter(
+        (r) => r.reminder_date < today && (r.status === 'PENDING' || r.status === 'SENT'),
+      );
+    } else if (query?.filter === 'UPCOMING') {
+      list = list.filter(
+        (r) => r.reminder_date > today && (r.status === 'PENDING' || r.status === 'SENT'),
+      );
+    } else if (query?.filter === 'COMPLETED') {
+      list = list.filter((r) => r.status === 'COMPLETED');
+    }
+    return list;
+  }
+  const params = new URLSearchParams();
+  if (query?.filter) params.append('filter', query.filter);
+  if (query?.status) params.append('status', query.status);
+  if (query?.party_id) params.append('party_id', query.party_id);
+  const qStr = params.toString();
+  return apiClient<PaymentReminder[]>(`/reminders${qStr ? `?${qStr}` : ''}`);
+}
+
+export async function createManualReminder(dto: {
+  party_id: string;
+  reminder_date: string;
+  amount: number;
+  notes?: string;
+}): Promise<PaymentReminder> {
+  if (USE_MOCK) {
+    const party = mockParties.find((p) => p.id === dto.party_id);
+    const newR: PaymentReminder = {
+      id: `rem_${Date.now()}`,
+      party_id: dto.party_id,
+      party_name: party?.name,
+      party_type: party?.type,
+      party_phone: party?.whatsapp_number,
+      reminder_date: dto.reminder_date,
+      amount: dto.amount,
+      notes: dto.notes,
+      status: 'PENDING',
+      created_by: 'u1',
+      creator_name: 'Mihir Sharma',
+      created_at: new Date().toISOString(),
+    };
+    mockReminders.unshift(newR);
+    return newR;
+  }
+  return apiClient<PaymentReminder>('/reminders', { method: 'POST', body: JSON.stringify(dto) });
+}
+
+export async function updateReminderStatus(
+  id: string,
+  status: 'PENDING' | 'SENT' | 'COMPLETED' | 'CANCELLED' | 'DISMISSED',
+): Promise<PaymentReminder> {
+  if (USE_MOCK) {
+    const r = mockReminders.find((item) => item.id === id);
+    if (r) {
+      r.status = status;
+      r.updated_at = new Date().toISOString();
+      return r;
+    }
+    throw new Error('Reminder not found');
+  }
+  return apiClient<PaymentReminder>(`/reminders/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
 }
 
 export async function listAuditLog(): Promise<AuditLogRow[]> {

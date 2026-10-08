@@ -1,9 +1,19 @@
-import { Injectable, Logger, Optional, Inject, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Optional,
+  Inject,
+  OnModuleInit,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
 import IORedis from 'ioredis';
 import { DatabaseService } from '../database/database.service';
 import { WhatsAppService } from '../whatsapp/whatsapp.service';
 import { IClock, SystemClock } from '../common/clock/clock.interface';
+import { AuthUser } from '../common/decorators/current-user.decorator';
+import { CreateManualReminderDto, ListRemindersQueryDto } from './reminders.dto';
 
 export interface UpdateReminderSettingsDto {
   repeat_days?: number;
@@ -364,5 +374,133 @@ export class RemindersService implements OnModuleInit {
       grandTotalOverdue: Math.round(grandTotalOverdue * 100) / 100,
       ownerSummarySent,
     };
+  }
+
+  async findAll(user: AuthUser, query: ListRemindersQueryDto) {
+    const conditions: string[] = [];
+    const params: any[] = [];
+    let idx = 1;
+
+    // Staff isolation (Req 1, 5)
+    if (user.role === 'STAFF') {
+      conditions.push(`r.created_by = $${idx++}`);
+      params.push(user.id);
+    }
+
+    if (query.party_id) {
+      conditions.push(`r.party_id = $${idx++}`);
+      params.push(query.party_id);
+    }
+
+    if (query.status) {
+      conditions.push(`r.status = $${idx++}`);
+      params.push(query.status);
+    }
+
+    const todayStr = this.clock.todayString();
+
+    if (query.filter === 'TODAY') {
+      conditions.push(`r.reminder_date = DATE '${todayStr}'`);
+    } else if (query.filter === 'OVERDUE') {
+      conditions.push(`r.reminder_date < DATE '${todayStr}' AND r.status IN ('PENDING', 'SENT')`);
+    } else if (query.filter === 'UPCOMING') {
+      conditions.push(`r.reminder_date > DATE '${todayStr}' AND r.status IN ('PENDING', 'SENT')`);
+    } else if (query.filter === 'COMPLETED') {
+      conditions.push(`r.status = 'COMPLETED'`);
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const sql = `
+      SELECT r.*,
+             p.name AS party_name, p.type AS party_type, p.whatsapp_number AS party_phone,
+             s.bill_no AS sale_bill_no, s.total_amount AS sale_total,
+             pu.bill_no AS purchase_bill_no, pu.total_amount AS purchase_total,
+             u.name AS creator_name
+      FROM payment_reminders r
+      JOIN parties p ON p.id = r.party_id
+      LEFT JOIN sales s ON s.id = r.sale_id AND s.is_deleted = false
+      LEFT JOIN purchases pu ON pu.id = r.purchase_id AND pu.is_deleted = false
+      JOIN users u ON u.id = r.created_by
+      ${whereClause}
+      ORDER BY r.reminder_date ASC, r.created_at DESC
+    `;
+
+    const res = await this.db.query(sql, params);
+    return res.rows;
+  }
+
+  async findOne(id: string, user: AuthUser) {
+    const res = await this.db.query(
+      `SELECT r.*,
+              p.name AS party_name, p.type AS party_type, p.whatsapp_number AS party_phone,
+              s.bill_no AS sale_bill_no, s.total_amount AS sale_total,
+              pu.bill_no AS purchase_bill_no, pu.total_amount AS purchase_total,
+              u.name AS creator_name
+       FROM payment_reminders r
+       JOIN parties p ON p.id = r.party_id
+       LEFT JOIN sales s ON s.id = r.sale_id
+       LEFT JOIN purchases pu ON pu.id = r.purchase_id
+       JOIN users u ON u.id = r.created_by
+       WHERE r.id = $1`,
+      [id],
+    );
+
+    if (res.rows.length === 0) {
+      throw new NotFoundException('Reminder not found');
+    }
+
+    const reminder = res.rows[0];
+    if (user.role === 'STAFF' && reminder.created_by !== user.id) {
+      throw new NotFoundException('Reminder not found');
+    }
+
+    return reminder;
+  }
+
+  async createManual(dto: CreateManualReminderDto, user: AuthUser) {
+    const partyRes = await this.db.query(
+      `SELECT id, name, is_active FROM parties WHERE id = $1`,
+      [dto.party_id],
+    );
+    if (partyRes.rows.length === 0 || !partyRes.rows[0].is_active) {
+      throw new BadRequestException('Invalid or inactive party specified');
+    }
+
+    const res = await this.db.query(
+      `INSERT INTO payment_reminders (party_id, reminder_date, amount, notes, status, created_by)
+       VALUES ($1, $2, $3, $4, 'PENDING', $5)
+       RETURNING *`,
+      [dto.party_id, dto.reminder_date, dto.amount, dto.notes || null, user.id],
+    );
+
+    const reminder = res.rows[0];
+
+    // Audit log
+    await this.db.query(
+      `INSERT INTO audit_log (actor_id, action, table_name, record_id, before_data, after_data)
+       VALUES ($1, 'CREATE', 'payment_reminders', $2, NULL, $3)`,
+      [user.id, reminder.id, JSON.stringify(reminder)],
+    );
+
+    return this.findOne(reminder.id, user);
+  }
+
+  async updateStatus(id: string, status: string, user: AuthUser) {
+    const existing = await this.findOne(id, user);
+
+    const res = await this.db.query(
+      `UPDATE payment_reminders SET status = $1, updated_at = now() WHERE id = $2 RETURNING *`,
+      [status, id],
+    );
+    const updated = res.rows[0];
+
+    await this.db.query(
+      `INSERT INTO audit_log (actor_id, action, table_name, record_id, before_data, after_data)
+       VALUES ($1, 'UPDATE', 'payment_reminders', $2, $3, $4)`,
+      [user.id, id, JSON.stringify(existing), JSON.stringify(updated)],
+    );
+
+    return this.findOne(id, user);
   }
 }

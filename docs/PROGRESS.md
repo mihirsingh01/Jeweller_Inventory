@@ -65,10 +65,14 @@ Running log for the implementation phases defined in `Claude.pdf`.
   - Save shortcut (`Ctrl+S`, `Cmd+S`, `Ctrl+Enter`) with in-flight lock, UUID idempotency key, and backspace navigation guard.
   - Outbox notification event `VOUCHER_CREATED` and audit log snapshots.
   - Automated unit test suite `test/voucher-calculations.test.ts` (7/7 tests passing).
-- [ ] **Phase 9: Reminders Module Extension** (Req 5, 14, 24)
-  - Link reminders to transactions (Sales/Purchases) and support manual reminders.
-  - Filters: Due today, Overdue, Upcoming, Completed, Cancelled.
-  - Cancellation cascade when linked bill is deleted.
+- [x] **Phase 9: Reminders Module Extension** (Req 5, 14, 24)
+  - Backend payment reminders management API (`GET /reminders`, `POST /reminders`, `PATCH /reminders/:id/status`) with staff isolation.
+  - Linked reminders from sales and purchases bills with cancellation cascades on bill soft-delete.
+  - Manual payment reminder creation with party selector, date picker, integer paise amount, and notes.
+  - Reminders categorization engine (`lib/calculations/reminder-calculations.ts`): Overdue, Due Today, Upcoming, Settled, Cancelled, Dismissed.
+  - Reminders UI (`components/RemindersView.tsx`): 4 KPI cards (Overdue, Today, Upcoming, Settled), filter chips, party filter, dynamic queue table, quick status actions (`✓ Settle`, `Dismiss`, `Cancel`), and scheduler automation settings.
+  - Added Reminders tab to `STAFF_NAV` so staff can manage their own overdue follow-ups.
+  - Automated unit test suite `test/reminders-filtering.test.ts` (5/5 tests passing).
 - [ ] **Phase 10: Notifications and WhatsApp** (Req 3, 4, 34, 37, 47)
   - Atomic `notification_outbox` table written inside the accounting transaction.
   - Post-commit async dispatcher.
@@ -87,8 +91,8 @@ Running log for the implementation phases defined in `Claude.pdf`.
 ---
 
 ## Current Status
-- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder), Phase 6 (Purchase Bill with Accounts Payable, Narration, and Charges), Phase 7 (Job Work with Issue Grid, Linked Receive Lines, Difference Calculation, and Labour Charges), Phase 8 (Receipt and Payment Vouchers with Cash/Bank Books, Live Balances, and Advance Warnings).
-- **Next Phase:** Phase 9 — Reminders Module Extension (Req 5, 14, 24).
+- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder), Phase 6 (Purchase Bill with Accounts Payable, Narration, and Charges), Phase 7 (Job Work with Issue Grid, Linked Receive Lines, Difference Calculation, and Labour Charges), Phase 8 (Receipt and Payment Vouchers with Cash/Bank Books, Live Balances, and Advance Warnings), Phase 9 (Reminders Module Extension with Queue Table, KPI Cards, and Manual Creation).
+- **Next Phase:** Phase 10 — Notifications and WhatsApp (Req 3, 4, 34, 37, 47).
 
 
 

@@ -3,11 +3,17 @@ import {
   Get,
   Patch,
   Post,
+  Param,
   Body,
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { RemindersService, UpdateReminderSettingsDto } from './reminders.service';
+import {
+  CreateManualReminderDto,
+  UpdateReminderStatusDto,
+  ListRemindersQueryDto,
+} from './reminders.dto';
 import { Roles, CurrentUser } from '../common/decorators';
 import { AuthUser } from '../common/decorators/current-user.decorator';
 
@@ -15,6 +21,13 @@ import { AuthUser } from '../common/decorators/current-user.decorator';
 @Controller('reminders')
 export class RemindersController {
   constructor(private readonly remindersService: RemindersService) {}
+
+  @Get()
+  @Roles('OWNER', 'STAFF')
+  @ApiOperation({ summary: 'List payment reminders with filters and staff scoping (Req 5)' })
+  findAll(@CurrentUser() user: AuthUser, @Query() query: ListRemindersQueryDto) {
+    return this.remindersService.findAll(user, query);
+  }
 
   @Get('settings')
   @Roles('OWNER')
@@ -52,5 +65,30 @@ export class RemindersController {
   @ApiOperation({ summary: 'List overdue bills created by the current staff member' })
   getMyOverdueBills(@CurrentUser() user: AuthUser) {
     return this.remindersService.getStaffOverdueBills(user.id);
+  }
+
+  @Get(':id')
+  @Roles('OWNER', 'STAFF')
+  @ApiOperation({ summary: 'Get single reminder by ID with staff isolation' })
+  findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.remindersService.findOne(id, user);
+  }
+
+  @Post()
+  @Roles('OWNER', 'STAFF')
+  @ApiOperation({ summary: 'Create manual payment reminder' })
+  createManual(@Body() dto: CreateManualReminderDto, @CurrentUser() user: AuthUser) {
+    return this.remindersService.createManual(dto, user);
+  }
+
+  @Patch(':id/status')
+  @Roles('OWNER', 'STAFF')
+  @ApiOperation({ summary: 'Update reminder status (COMPLETED, DISMISSED, CANCELLED)' })
+  updateStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateReminderStatusDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.remindersService.updateStatus(id, dto.status, user);
   }
 }

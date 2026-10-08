@@ -54,6 +54,7 @@ const OWNER_NAV = [
 const STAFF_NAV = [
   ['Home', '⌂'],
   ['My Entries', '↗'],
+  ['Reminders', '▣'],
 ];
 
 export default function Page() {
@@ -256,8 +257,13 @@ export default function Page() {
             <StaffManagementView staffList={staffList} onRefresh={loadData} />
           )}
 
-          {role === 'Owner' && active === 'Reminders' && reminderSettings && (
-            <RemindersView settings={reminderSettings} onRefresh={loadData} />
+          {active === 'Reminders' && reminderSettings && (
+            <RemindersView
+              settings={reminderSettings}
+              parties={parties}
+              role={role}
+              onRefresh={loadData}
+            />
           )}
 
           {role === 'Owner' && active === 'Audit Log' && (

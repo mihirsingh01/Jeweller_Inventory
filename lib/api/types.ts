@@ -327,6 +327,28 @@ export interface ReminderSettings {
   is_active: boolean;
 }
 
+export interface PaymentReminder {
+  id: string;
+  party_id: string;
+  party_name?: string;
+  party_type?: 'CUSTOMER' | 'SUPPLIER' | 'KARIGAR';
+  party_phone?: string;
+  sale_id?: string;
+  sale_bill_no?: number;
+  sale_total?: number;
+  purchase_id?: string;
+  purchase_bill_no?: number;
+  purchase_total?: number;
+  reminder_date: string;
+  amount: number;
+  notes?: string;
+  status: 'PENDING' | 'SENT' | 'COMPLETED' | 'CANCELLED' | 'DISMISSED';
+  created_by: string;
+  creator_name?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface AuditLogRow {
   id: number;
   actor_id: string;
