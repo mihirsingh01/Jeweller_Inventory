@@ -91,10 +91,18 @@ export class PartiesService {
 
     const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const query = `
-      SELECT id, name, type, whatsapp_number, address, work_types, opening_balance, is_active, created_at, created_by
-      FROM parties
+      SELECT p.id, p.name, p.type, p.whatsapp_number, p.address, p.work_types, p.opening_balance, p.is_active, p.created_at, p.created_by,
+        COALESCE(
+          p.opening_balance + (
+            SELECT COALESCE(SUM(debit - credit), 0)
+            FROM ledger_entries
+            WHERE party_id = p.id
+          ),
+          p.opening_balance
+        ) AS current_balance
+      FROM parties p
       ${whereClause}
-      ORDER BY name ASC
+      ORDER BY p.name ASC
       LIMIT $${idx} OFFSET $${idx + 1}
     `;
     params.push(limit, offset);
@@ -104,6 +112,8 @@ export class PartiesService {
 
     return res.rows.map((party) => ({
       ...party,
+      opening_balance: Number(party.opening_balance),
+      current_balance: Number(party.current_balance),
       whatsapp_number: this.maskMobile(party.whatsapp_number, isOwner, revealPhone),
       raw_phone_masked: !isOwner || !revealPhone,
     }));

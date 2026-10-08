@@ -149,6 +149,76 @@ export function AllEntriesView({ entries, onRefresh, onOpenSaleModal }: AllEntri
                 <div><span style={{ color: '#7A7268' }}>Status:</span> <strong>{viewTarget.status}</strong></div>
                 <div><span style={{ color: '#7A7268' }}>Total Amount:</span> <strong>{formatRupee(viewTarget.total_amount)}</strong></div>
               </div>
+
+              {/* Dynamic Ledger Balances if fetched */}
+              {viewTarget.balance_before !== undefined && (
+                <div style={{ marginTop: 12, padding: 10, background: '#FAF6F2', borderRadius: 8, border: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#7A7268', textTransform: 'uppercase', marginBottom: 6 }}>
+                    Customer Ledger Impact
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
+                    <div style={{ padding: '6px 8px', background: '#fff', borderRadius: 6, border: '1px solid var(--line)' }}>
+                      <div style={{ fontSize: 10, color: '#7A7268' }}>Previous Balance</div>
+                      <div style={{ fontWeight: 600, fontSize: 12 }}>{formatRupee(viewTarget.balance_before)}</div>
+                    </div>
+                    <div style={{ padding: '6px 8px', background: '#fff', borderRadius: 6, border: '1px solid var(--line)' }}>
+                      <div style={{ fontSize: 10, color: '#7A7268' }}>This Bill</div>
+                      <div style={{ fontWeight: 600, fontSize: 12, color: '#9B1C31' }}>+{formatRupee(viewTarget.this_bill || viewTarget.total_amount)}</div>
+                    </div>
+                    <div style={{ padding: '6px 8px', background: '#fff', borderRadius: 6, border: '1px solid var(--line)' }}>
+                      <div style={{ fontSize: 10, color: '#7A7268' }}>Closing Balance</div>
+                      <div style={{ fontWeight: 700, fontSize: 12, color: '#2E7D32' }}>{formatRupee(viewTarget.balance_after ?? (viewTarget.balance_before + viewTarget.total_amount))}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Charges Breakdown */}
+              {(viewTarget.taxable_amount || viewTarget.gst_amount || viewTarget.discount_amount || viewTarget.transport_charges) && (
+                <div style={{ marginTop: 10, padding: 8, background: '#F8FAFC', borderRadius: 6, fontSize: 12, border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                    <span>Subtotal:</span>
+                    <span>{formatRupee(viewTarget.subtotal || viewTarget.total_amount)}</span>
+                  </div>
+                  {!!viewTarget.discount_amount && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', color: '#16A34A' }}>
+                      <span>Discount ({viewTarget.discount_type === 'PERCENT' ? `${viewTarget.discount_value}%` : '₹'}):</span>
+                      <span>-{formatRupee(viewTarget.discount_amount)}</span>
+                    </div>
+                  )}
+                  {!!viewTarget.gst_amount && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                      <span>GST ({viewTarget.gst_rate}%):</span>
+                      <span>+{formatRupee(viewTarget.gst_amount)}</span>
+                    </div>
+                  )}
+                  {!!viewTarget.transport_charges && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                      <span>Transport Charges:</span>
+                      <span>+{formatRupee(viewTarget.transport_charges)}</span>
+                    </div>
+                  )}
+                  {!!viewTarget.packaging_charges && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                      <span>Packaging Charges:</span>
+                      <span>+{formatRupee(viewTarget.packaging_charges)}</span>
+                    </div>
+                  )}
+                  {!!viewTarget.other_charges && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                      <span>Other Charges:</span>
+                      <span>+{formatRupee(viewTarget.other_charges)}</span>
+                    </div>
+                  )}
+                  {!!viewTarget.round_off && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                      <span>Round Off:</span>
+                      <span>{viewTarget.round_off > 0 ? `+${formatRupee(viewTarget.round_off)}` : formatRupee(viewTarget.round_off)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {viewTarget.lines && viewTarget.lines.length > 0 && (
                 <div style={{ marginTop: 14 }}>
                   <h4 style={{ fontSize: 13, marginBottom: 8 }}>Billed Items</h4>

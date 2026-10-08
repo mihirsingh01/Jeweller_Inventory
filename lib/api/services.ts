@@ -158,6 +158,15 @@ export async function createParty(dto: {
   return apiClient<Party>('/parties', { method: 'POST', body: JSON.stringify(dto) });
 }
 
+export async function getParty(id: string, revealPhone = false): Promise<Party> {
+  if (USE_MOCK) {
+    const p = mockParties.find((party) => party.id === id);
+    if (!p) throw new Error('Party not found');
+    return p;
+  }
+  return apiClient<Party>(`/parties/${id}${revealPhone ? '?reveal_phone=true' : ''}`);
+}
+
 export async function listItems(search?: string): Promise<Item[]> {
   if (USE_MOCK) {
     return mockItems.filter((i) => !search || i.name.toLowerCase().includes(search.toLowerCase()));
@@ -250,16 +259,33 @@ export async function listSales(partyId?: string): Promise<Sale[]> {
   return apiClient<Sale[]>(`/sales${partyId ? `?party_id=${partyId}` : ''}`);
 }
 
+export async function getSale(id: string): Promise<Sale> {
+  if (USE_MOCK) {
+    const sale = mockSales.find((s) => s.id === id);
+    if (!sale) throw new Error('Sale not found');
+    return sale;
+  }
+  return apiClient<Sale>(`/sales/${id}`);
+}
+
 export async function createSale(dto: any): Promise<Sale> {
   if (USE_MOCK) {
     const party = mockParties.find((p) => p.id === dto.party_id);
-    let total = 0;
+    let lineSubtotal = 0;
     const lines = dto.lines.map((l: any) => {
       const amt = l.amount || (l.weight_kg > 0 ? l.weight_kg * l.rate : l.pieces * l.rate);
-      total += amt;
+      lineSubtotal += amt;
       const item = mockItems.find((i) => i.id === l.item_id);
       return { ...l, amount: amt, item_name: item?.name || 'Item' };
     });
+
+    const grandTotal = dto.total_amount ?? lineSubtotal;
+    const balanceBefore = party?.current_balance ?? party?.opening_balance ?? 0;
+    const balanceAfter = balanceBefore + grandTotal;
+
+    if (party) {
+      party.current_balance = balanceAfter;
+    }
 
     const newSale: Sale = {
       id: `s_${Date.now()}`,
@@ -269,14 +295,29 @@ export async function createSale(dto: any): Promise<Sale> {
       party_phone: party?.whatsapp_number,
       entry_at: new Date().toISOString(),
       due_date: dto.due_date,
-      total_amount: total,
-      outstanding_amount: total,
+      subtotal: dto.subtotal ?? lineSubtotal,
+      discount_type: dto.discount_type || 'AMOUNT',
+      discount_value: dto.discount_value || 0,
+      discount_amount: dto.discount_amount || 0,
+      taxable_amount: dto.taxable_amount ?? lineSubtotal,
+      gst_rate: dto.gst_rate ?? 3.0,
+      gst_amount: dto.gst_amount || 0,
+      transport_charges: dto.transport_charges || 0,
+      packaging_charges: dto.packaging_charges || 0,
+      other_charges: dto.other_charges || 0,
+      round_off: dto.round_off || 0,
+      total_amount: grandTotal,
+      balance_before: balanceBefore,
+      this_bill: grandTotal,
+      balance_after: balanceAfter,
+      outstanding_amount: grandTotal,
       allocated_amount: 0,
       status: 'OPEN',
       notes: dto.notes,
       created_by: 'u2',
       creator_name: 'Amit Verma',
       lines,
+      reminder: dto.reminder,
     };
     mockSales.unshift(newSale);
 

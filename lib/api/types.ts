@@ -107,7 +107,21 @@ export interface Sale {
   party_phone?: string;
   entry_at: string;
   due_date: string;
+  subtotal?: number;
+  discount_type?: 'AMOUNT' | 'PERCENT';
+  discount_value?: number;
+  discount_amount?: number;
+  taxable_amount?: number;
+  gst_rate?: number;
+  gst_amount?: number;
+  transport_charges?: number;
+  packaging_charges?: number;
+  other_charges?: number;
+  round_off?: number;
   total_amount: number;
+  balance_before?: number;
+  this_bill?: number;
+  balance_after?: number;
   allocated_amount?: number;
   outstanding_amount?: number;
   status: BillStatus;
@@ -115,6 +129,7 @@ export interface Sale {
   created_by: string;
   creator_name?: string;
   lines?: SaleLine[];
+  reminder?: any;
 }
 
 export interface PurchaseLine {

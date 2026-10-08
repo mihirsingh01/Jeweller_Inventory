@@ -60,7 +60,7 @@ export class SalesService {
 
   async findOne(id: string, user: AuthUser) {
     const saleRes = await this.db.query(
-      `SELECT s.*, p.name AS party_name, p.whatsapp_number AS party_phone, u.name AS creator_name,
+      `SELECT s.*, p.name AS party_name, p.whatsapp_number AS party_phone, p.opening_balance AS party_opening_balance, u.name AS creator_name,
         COALESCE(
           (SELECT SUM(va.amount) FROM voucher_allocations va WHERE va.sale_id = s.id),
           0
@@ -86,18 +86,55 @@ export class SalesService {
     }
 
     const linesRes = await this.db.query(
-      `SELECT sl.*, i.name AS item_name 
+      `SELECT sl.*, i.name AS item_name, i.code AS item_code 
        FROM sale_lines sl
        JOIN items i ON i.id = sl.item_id
        WHERE sl.sale_id = $1`,
       [id],
     );
-
     sale.lines = linesRes.rows;
+
+    // Requirement 8: Compute Balance Before | This Bill | Closing Balance dynamically from ledger
+    const ledgerRes = await this.db.query(
+      `SELECT id FROM ledger_entries WHERE source_type = 'SALE' AND source_id = $1 ORDER BY id ASC LIMIT 1`,
+      [id],
+    );
+    let balanceBefore = Number(sale.party_opening_balance || 0);
+    if (ledgerRes.rows.length > 0) {
+      const ledgerEntryId = ledgerRes.rows[0].id;
+      const prevRes = await this.db.query(
+        `SELECT p.opening_balance + COALESCE(SUM(le.debit - le.credit), 0) AS balance_before
+         FROM parties p
+         LEFT JOIN ledger_entries le ON le.party_id = p.id AND le.id < $1
+         WHERE p.id = $2
+         GROUP BY p.opening_balance`,
+        [ledgerEntryId, sale.party_id],
+      );
+      if (prevRes.rows.length > 0) {
+        balanceBefore = Number(prevRes.rows[0].balance_before);
+      }
+    }
+    const thisBill = Number(sale.total_amount);
+    const balanceAfter = balanceBefore + thisBill;
+
+    sale.balance_before = Math.round(balanceBefore * 100) / 100;
+    sale.this_bill = thisBill;
+    sale.balance_after = Math.round(balanceAfter * 100) / 100;
+
+    // Linked payment reminder if present
+    const reminderRes = await this.db.query(
+      `SELECT * FROM payment_reminders WHERE sale_id = $1 AND status <> 'CANCELLED' ORDER BY created_at DESC LIMIT 1`,
+      [id],
+    );
+    sale.reminder = reminderRes.rows[0] || null;
+
     return sale;
   }
 
   async create(dto: CreateSaleDto, user: AuthUser) {
+    if (!dto.party_id) {
+      throw new BadRequestException('Customer party is required');
+    }
     if (!dto.lines || dto.lines.length === 0) {
       throw new BadRequestException('At least one item line is required');
     }
@@ -113,15 +150,46 @@ export class SalesService {
     }
 
     const savedSale = await this.db.withTransaction(async (client) => {
-      let totalAmount = 0;
+      // 1. Verify party exists
+      const partyRes = await client.query(
+        `SELECT id, name, whatsapp_number, is_active FROM parties WHERE id = $1`,
+        [dto.party_id],
+      );
+      if (partyRes.rows.length === 0) {
+        throw new NotFoundException('Customer party not found');
+      }
+      const party = partyRes.rows[0];
 
-      // Validate lines and verify available stock
+      let subtotalPaise = 0;
+
+      // 2. Validate lines, units, and verify stock
       for (const line of dto.lines) {
+        if (!line.item_id) {
+          throw new BadRequestException('Item must be selected for all lines');
+        }
         if (line.pieces < 0 || line.weight_kg < 0 || line.rate < 0) {
-          throw new BadRequestException('Values cannot be negative');
+          throw new BadRequestException('Quantity and rate values cannot be negative');
         }
         if (line.pieces <= 0 && line.weight_kg <= 0) {
           throw new BadRequestException('Pieces or weight (Kg) must be greater than zero for each line');
+        }
+
+        // Validate unit compatibility against item config
+        const itemRes = await client.query(
+          `SELECT id, name, allowed_units, default_unit FROM items WHERE id = $1`,
+          [line.item_id],
+        );
+        if (itemRes.rows.length === 0) {
+          throw new NotFoundException(`Item not found for id ${line.item_id}`);
+        }
+        const item = itemRes.rows[0];
+        const unit = line.unit || (line.pieces > 0 ? 'PCS' : 'KG');
+
+        if (item.allowed_units === 'PCS' && unit !== 'PCS') {
+          throw new BadRequestException(`${item.name} only allows PCS unit`);
+        }
+        if (item.allowed_units === 'KG' && unit !== 'KG') {
+          throw new BadRequestException(`${item.name} only allows KG unit`);
         }
 
         // Check available stock
@@ -134,56 +202,103 @@ export class SalesService {
         const availPieces = Number(stockRes.rows[0]?.stock_pieces || 0);
         const availKg = Number(stockRes.rows[0]?.stock_kg || 0);
 
-        // Check if allow_negative_stock is enabled in settings (default false)
-        const settingsRes = await client.query(
-          `SELECT is_active FROM reminder_settings WHERE id = 1`,
-        );
-        const allowNegativeStock = false; // Default strict inventory control
-
-        if (!allowNegativeStock) {
-          if (line.pieces > 0 && availPieces < line.pieces) {
-            throw new BadRequestException(
-              `Insufficient stock for item. Available: ${availPieces} pieces, Requested: ${line.pieces}`,
-            );
-          }
-          if (line.weight_kg > 0 && availKg < line.weight_kg) {
-            throw new BadRequestException(
-              `Insufficient stock for item. Available: ${availKg.toFixed(3)} Kg, Requested: ${line.weight_kg.toFixed(3)} Kg`,
-            );
-          }
+        if (line.pieces > 0 && availPieces < line.pieces) {
+          throw new BadRequestException(
+            `Insufficient stock for ${item.name}. Available: ${availPieces} pcs, Requested: ${line.pieces} pcs`,
+          );
+        }
+        if (line.weight_kg > 0 && availKg < line.weight_kg) {
+          throw new BadRequestException(
+            `Insufficient stock for ${item.name}. Available: ${availKg.toFixed(3)} Kg, Requested: ${line.weight_kg.toFixed(3)} Kg`,
+          );
         }
 
-        const calcAmount =
-          line.amount !== undefined
-            ? line.amount
-            : line.weight_kg > 0
-            ? Number((line.weight_kg * line.rate).toFixed(2))
-            : Number((line.pieces * line.rate).toFixed(2));
-        totalAmount += calcAmount;
+        // Calculate line amount with integer paise
+        let lineAmountPaise = 0;
+        const ratePaise = Math.round(line.rate * 100);
+        if (unit === 'PCS') {
+          lineAmountPaise = Math.floor(line.pieces) * ratePaise;
+        } else {
+          const grams = Math.round(line.weight_kg * 1000);
+          lineAmountPaise = Math.round((grams * ratePaise) / 1000);
+        }
+        line.amount = lineAmountPaise / 100;
+        subtotalPaise += lineAmountPaise;
       }
 
-      // 1. Insert Sales Header
+      // 3. Compute charges & grand total using zero-float integer math
+      const subtotal = subtotalPaise / 100;
+      const discountType = dto.discount_type === 'PERCENT' ? 'PERCENT' : 'AMOUNT';
+      const discountValue = Math.max(0, Number(dto.discount_value) || 0);
+
+      let discountPaise = 0;
+      if (discountType === 'PERCENT') {
+        discountPaise = Math.round((subtotalPaise * discountValue) / 100);
+      } else {
+        discountPaise = Math.round(discountValue * 100);
+      }
+      discountPaise = Math.min(discountPaise, subtotalPaise);
+
+      const taxablePaise = subtotalPaise - discountPaise;
+      const gstRate = Math.max(0, Number(dto.gst_rate ?? 3.0));
+      const gstPaise = Math.round((taxablePaise * gstRate) / 100);
+
+      const transportPaise = Math.max(0, Math.round((Number(dto.transport_charges) || 0) * 100));
+      const packagingPaise = Math.max(0, Math.round((Number(dto.packaging_charges) || 0) * 100));
+      const otherPaise = Math.max(0, Math.round((Number(dto.other_charges) || 0) * 100));
+
+      const totalChargesPaise = transportPaise + packagingPaise + otherPaise;
+      const grandTotalBeforeRoundPaise = taxablePaise + gstPaise + totalChargesPaise;
+
+      // Round to nearest integer rupee
+      const grandTotalPaise = Math.round(grandTotalBeforeRoundPaise / 100) * 100;
+      const roundOffPaise = grandTotalPaise - grandTotalBeforeRoundPaise;
+
+      const grandTotal = grandTotalPaise / 100;
+
+      // Reconcile and reject mismatched client totals
+      if (dto.total_amount !== undefined && Math.abs(dto.total_amount - grandTotal) > 1.0) {
+        throw new BadRequestException(
+          `Total amount mismatch. Client sent ₹${dto.total_amount}, server calculated ₹${grandTotal}`,
+        );
+      }
+
+      // 4. Insert Sales Header
       const saleInsert = await client.query(
-        `INSERT INTO sales (party_id, due_date, total_amount, notes, created_by, idempotency_key)
-         VALUES ($1, $2, $3, $4, $5, $6)
+        `INSERT INTO sales (
+           party_id, due_date, subtotal, discount_type, discount_value, discount_amount,
+           taxable_amount, gst_rate, gst_amount, transport_charges, packaging_charges,
+           other_charges, round_off, total_amount, notes, created_by, idempotency_key
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
          RETURNING *`,
-        [dto.party_id, dto.due_date, totalAmount, dto.notes || null, user.id, dto.idempotency_key || null],
+        [
+          dto.party_id,
+          dto.due_date,
+          subtotal,
+          discountType,
+          discountValue,
+          discountPaise / 100,
+          taxablePaise / 100,
+          gstRate,
+          gstPaise / 100,
+          transportPaise / 100,
+          packagingPaise / 100,
+          otherPaise / 100,
+          roundOffPaise / 100,
+          grandTotal,
+          dto.notes || null,
+          user.id,
+          dto.idempotency_key || null,
+        ],
       );
       const sale = saleInsert.rows[0];
 
-      // 2. Insert Sale Lines & 3. Stock Movements (negative delta)
+      // 5. Insert Sale Lines & Stock Movements (negative delta)
       for (const line of dto.lines) {
-        const lineAmount =
-          line.amount !== undefined
-            ? line.amount
-            : line.weight_kg > 0
-            ? Number((line.weight_kg * line.rate).toFixed(2))
-            : Number((line.pieces * line.rate).toFixed(2));
-
         await client.query(
           `INSERT INTO sale_lines (sale_id, item_id, pieces, weight_kg, rate, amount)
            VALUES ($1, $2, $3, $4, $5, $6)`,
-          [sale.id, line.item_id, line.pieces || 0, line.weight_kg || 0, line.rate, lineAmount],
+          [sale.id, line.item_id, line.pieces || 0, line.weight_kg || 0, line.rate, line.amount],
         );
 
         // Stock movement: Sale reduces stock
@@ -194,11 +309,45 @@ export class SalesService {
         );
       }
 
-      // 4. Ledger Entry: Sale increases customer debit (they owe more)
+      // 6. Ledger Entry: Sale increases customer debit (they owe more)
       await client.query(
         `INSERT INTO ledger_entries (party_id, source_type, source_id, debit, credit)
          VALUES ($1, 'SALE', $2, $3, 0)`,
-        [sale.party_id, sale.id, totalAmount],
+        [sale.party_id, sale.id, grandTotal],
+      );
+
+      // 7. Payment Reminder (if enabled)
+      if (dto.reminder?.enabled && dto.reminder.reminder_date) {
+        const reminderAmount = Number(dto.reminder.amount) > 0 ? Number(dto.reminder.amount) : grandTotal;
+        await client.query(
+          `INSERT INTO payment_reminders (sale_id, party_id, reminder_date, amount, notes, status, created_by)
+           VALUES ($1, $2, $3, $4, $5, 'PENDING', $6)`,
+          [sale.id, sale.party_id, dto.reminder.reminder_date, reminderAmount, dto.reminder.notes || null, user.id],
+        );
+      }
+
+      // 8. Audit Log
+      await client.query(
+        `INSERT INTO audit_log (actor_id, action, table_name, record_id, before_data, after_data)
+         VALUES ($1, 'CREATE', 'sales', $2, NULL, $3)`,
+        [user.id, sale.id, JSON.stringify(sale)],
+      );
+
+      // 9. Notification Outbox Row
+      await client.query(
+        `INSERT INTO notification_outbox (event_type, entity_type, entity_id, recipient_phone, payload, status)
+         VALUES ($1, 'SALE', $2, $3, $4, 'PENDING')`,
+        [
+          'SALE_CREATED',
+          sale.id,
+          party.whatsapp_number || null,
+          JSON.stringify({
+            bill_no: sale.bill_no,
+            customer_name: party.name,
+            amount: grandTotal,
+            due_date: sale.due_date,
+          }),
+        ],
       );
 
       return sale;

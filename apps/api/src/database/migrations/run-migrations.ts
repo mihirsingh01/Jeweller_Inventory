@@ -77,6 +77,56 @@ async function runMigrations() {
       console.log('✓ 003_add_item_code_and_units_and_idempotency has already been applied.');
     }
 
+    // Migration 004: Add sales extra charges, payment_reminders, and notification_outbox
+    const { rows: m4Rows } = await pool.query('SELECT name FROM _migrations WHERE name = $1', ['004_add_sales_charges_reminders_outbox']);
+    if (m4Rows.length === 0) {
+      console.log('Applying 004_add_sales_charges_reminders_outbox migration...');
+      await pool.query(`
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS subtotal NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount_type TEXT NOT NULL DEFAULT 'AMOUNT';
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount_value NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS discount_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS taxable_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS gst_rate NUMERIC(5,2) NOT NULL DEFAULT 3.0;
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS gst_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS transport_charges NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS packaging_charges NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS other_charges NUMERIC(14,2) NOT NULL DEFAULT 0;
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS round_off NUMERIC(6,2) NOT NULL DEFAULT 0;
+
+        CREATE TABLE IF NOT EXISTS payment_reminders (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            sale_id UUID REFERENCES sales(id) ON DELETE CASCADE,
+            purchase_id UUID REFERENCES purchases(id) ON DELETE CASCADE,
+            party_id UUID NOT NULL REFERENCES parties(id),
+            reminder_date DATE NOT NULL,
+            amount NUMERIC(14,2) NOT NULL CHECK (amount >= 0),
+            notes TEXT,
+            status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'SENT', 'CANCELLED', 'DISMISSED')),
+            created_by UUID NOT NULL REFERENCES users(id),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+        );
+
+        CREATE TABLE IF NOT EXISTS notification_outbox (
+            id BIGSERIAL PRIMARY KEY,
+            event_type TEXT NOT NULL,
+            entity_type TEXT NOT NULL,
+            entity_id UUID NOT NULL,
+            recipient_phone TEXT,
+            payload JSONB NOT NULL,
+            status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'SENT', 'FAILED', 'SKIPPED')),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            processed_at TIMESTAMPTZ,
+            error_message TEXT
+        );
+      `);
+      await pool.query('INSERT INTO _migrations (name) VALUES ($1)', ['004_add_sales_charges_reminders_outbox']);
+      console.log('✓ 004_add_sales_charges_reminders_outbox applied successfully.');
+    } else {
+      console.log('✓ 004_add_sales_charges_reminders_outbox has already been applied.');
+    }
+
     console.log('All migrations completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);

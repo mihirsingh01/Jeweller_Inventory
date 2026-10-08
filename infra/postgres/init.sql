@@ -93,6 +93,17 @@ CREATE TABLE IF NOT EXISTS sales (
     party_id UUID NOT NULL REFERENCES parties(id),
     entry_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     due_date DATE NOT NULL,
+    subtotal NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (subtotal >= 0),
+    discount_type TEXT NOT NULL DEFAULT 'AMOUNT' CHECK (discount_type IN ('AMOUNT', 'PERCENT')),
+    discount_value NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (discount_value >= 0),
+    discount_amount NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (discount_amount >= 0),
+    taxable_amount NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (taxable_amount >= 0),
+    gst_rate NUMERIC(5,2) NOT NULL DEFAULT 3.0 CHECK (gst_rate >= 0),
+    gst_amount NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (gst_amount >= 0),
+    transport_charges NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (transport_charges >= 0),
+    packaging_charges NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (packaging_charges >= 0),
+    other_charges NUMERIC(14,2) NOT NULL DEFAULT 0 CHECK (other_charges >= 0),
+    round_off NUMERIC(6,2) NOT NULL DEFAULT 0,
     total_amount NUMERIC(14,2) NOT NULL CHECK (total_amount >= 0),
     status bill_status NOT NULL DEFAULT 'OPEN',
     notes TEXT,
@@ -229,7 +240,36 @@ CREATE TABLE IF NOT EXISTS reminder_log (
     status TEXT NOT NULL
 );
 
--- 16. WhatsApp messages log
+-- 16. Payment reminders (Scheduled & linked reminders)
+CREATE TABLE IF NOT EXISTS payment_reminders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sale_id UUID REFERENCES sales(id) ON DELETE CASCADE,
+    purchase_id UUID REFERENCES purchases(id) ON DELETE CASCADE,
+    party_id UUID NOT NULL REFERENCES parties(id),
+    reminder_date DATE NOT NULL,
+    amount NUMERIC(14,2) NOT NULL CHECK (amount >= 0),
+    notes TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'SENT', 'CANCELLED', 'DISMISSED')),
+    created_by UUID NOT NULL REFERENCES users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 17. Notification outbox (Transactional outbox for WhatsApp / dispatch)
+CREATE TABLE IF NOT EXISTS notification_outbox (
+    id BIGSERIAL PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id UUID NOT NULL,
+    recipient_phone TEXT,
+    payload JSONB NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'SENT', 'FAILED', 'SKIPPED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    processed_at TIMESTAMPTZ,
+    error_message TEXT
+);
+
+-- 18. WhatsApp messages log
 CREATE TABLE IF NOT EXISTS whatsapp_messages (
     id BIGSERIAL PRIMARY KEY,
     kind TEXT NOT NULL,

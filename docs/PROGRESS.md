@@ -28,11 +28,13 @@ Running log for the implementation phases defined in `Claude.pdf`.
   - Units configuration (`PCS` integer, `KG` 3 decimals), pure zero-float calculation functions.
   - Shared save shortcut (`Ctrl+S` / `Cmd+S`, `Ctrl+Enter`) with in-flight lock and idempotency key.
   - Non-input Backspace navigation guard.
-- [ ] **Phase 5: Sales Bill** (Req 2, 11–17, 40, 46, 48, 49)
+- [x] **Phase 5: Sales Bill** (Req 2, 11–17, 40, 46, 48, 49)
   - Wire `ItemEntryGrid` with customer selector and `Alt+C`.
   - Fetch previous balance from ledger: Previous Balance | This Bill | Closing Balance.
-  - Configurable charges: GST, Discount, Transport, Packaging, Other Charges.
-  - Optional payment reminder linked to sale.
+  - Configurable charges: GST, Discount (Fixed/Percent), Transport, Packaging, Other Charges, Round-Off.
+  - Pure calculation engine `calculateBillTotals` with 0-float integer arithmetic and validation.
+  - Optional payment reminder linked to sale (inserted into `payment_reminders`).
+  - Dynamic historical ledger calculation on `findOne`: `balance_before | this_bill | balance_after`.
   - Atomic database transaction (bill header + lines + ledger + stock + reminder + audit + outbox).
 - [ ] **Phase 6: Purchase Bill** (Req 18–26)
   - Mirror Sales implementation with supplier selector (`Alt+S`).
@@ -70,6 +72,6 @@ Running log for the implementation phases defined in `Claude.pdf`.
 ---
 
 ## Current Status
-- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace).
-- **Next Phase:** Phase 5 — Sales Bill (Req 2, 11–17, 40, 46, 48, 49).
-- **Awaiting:** User "Go" for Phase 5.
+- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace), Phase 5 (Sales Bill with Charges, Dynamic Ledger Balance, and Payment Reminder).
+- **Next Phase:** Phase 6 — Purchase Bill (Req 18–26).
+
