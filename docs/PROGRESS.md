@@ -22,10 +22,10 @@ Running log for the implementation phases defined in `Claude.pdf`.
   - Shared `QuickAddPartyDialog(type)`.
   - Keyboard shortcuts: `Alt+C` (Sales), `Alt+S` (Purchase), `Alt+K` (Job Work).
   - Audit logs for party create/edit.
-- [ ] **Phase 4: Shared Fast-Entry Item Grid, Save Shortcut & Backspace** (Req 11, 12, 15, 16, 21, 22, 30, 42, 43)
+- [x] **Phase 4: Shared Fast-Entry Item Grid, Save Shortcut & Backspace** (Req 11, 12, 15, 16, 21, 22, 30, 42, 43, 44)
   - Unified `ItemEntryGrid` component with auto-focused first row and auto-appending new rows.
   - Tab/Enter navigation, arrow keys in item dropdown, `Ctrl+Delete` row deletion.
-  - Units configuration (`PCS` integer, `KG` 3 decimals), pure `calculateBillTotals()` function.
+  - Units configuration (`PCS` integer, `KG` 3 decimals), pure zero-float calculation functions.
   - Shared save shortcut (`Ctrl+S` / `Cmd+S`, `Ctrl+Enter`) with in-flight lock and idempotency key.
   - Non-input Backspace navigation guard.
 - [ ] **Phase 5: Sales Bill** (Req 2, 11–17, 40, 46, 48, 49)
@@ -70,6 +70,6 @@ Running log for the implementation phases defined in `Claude.pdf`.
 ---
 
 ## Current Status
-- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts).
-- **Next Phase:** Phase 4 — Shared Fast-Entry Item Grid, Save Shortcut & Backspace (Req 11, 12, 15, 16, 21, 22, 30, 42, 43).
-- **Awaiting:** Ready for Phase 4.
+- **Completed:** Phase 1 (Audit & Change Map), Phase 2 (Real Roles and Staff Isolation), Phase 3 (Customer, Supplier, Karigar Masters & Alt Shortcuts), Phase 4 (Shared Fast-Entry Item Grid, Save Shortcut & Backspace).
+- **Next Phase:** Phase 5 — Sales Bill (Req 2, 11–17, 40, 46, 48, 49).
+- **Awaiting:** User "Go" for Phase 5.

@@ -32,9 +32,26 @@ export interface Item {
   id: string;
   name: string;
   category?: string;
+  code?: string;
+  allowed_units?: 'PCS' | 'KG' | 'BOTH';
+  default_unit?: 'PCS' | 'KG';
   stock_pieces: number;
   stock_kg: number;
   is_active: boolean;
+}
+
+export interface GridLineItem {
+  id: string;
+  item_id: string;
+  item_name?: string;
+  item_code?: string;
+  unit: 'PCS' | 'KG';
+  pieces: number;
+  weight_kg: number;
+  rate: number;
+  amount: number;
+  isValid?: boolean;
+  error?: string;
 }
 
 export interface CreateItemDto {
@@ -74,6 +91,7 @@ export interface SaleLine {
   id?: string;
   item_id: string;
   item_name?: string;
+  unit?: 'PCS' | 'KG';
   pieces: number;
   weight_kg: number;
   rate: number;
@@ -83,6 +101,7 @@ export interface SaleLine {
 export interface Sale {
   id: string;
   bill_no: number;
+  idempotency_key?: string;
   party_id: string;
   party_name?: string;
   party_phone?: string;
@@ -102,6 +121,7 @@ export interface PurchaseLine {
   id?: string;
   item_id: string;
   item_name?: string;
+  unit?: 'PCS' | 'KG';
   pieces: number;
   weight_kg: number;
   rate: number;
@@ -111,6 +131,7 @@ export interface PurchaseLine {
 export interface Purchase {
   id: string;
   bill_no: number;
+  idempotency_key?: string;
   party_id: string;
   party_name?: string;
   party_phone?: string;

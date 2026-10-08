@@ -55,6 +55,28 @@ async function runMigrations() {
       console.log('✓ 002_add_party_work_types has already been applied.');
     }
 
+    // Migration 003: Add item code, allowed_units, default_unit, and idempotency keys
+    const { rows: m3Rows } = await pool.query('SELECT name FROM _migrations WHERE name = $1', ['003_add_item_code_and_units_and_idempotency']);
+    if (m3Rows.length === 0) {
+      console.log('Applying 003_add_item_code_and_units_and_idempotency migration...');
+      await pool.query(`
+        ALTER TABLE items ADD COLUMN IF NOT EXISTS code TEXT UNIQUE;
+        ALTER TABLE items ADD COLUMN IF NOT EXISTS allowed_units TEXT NOT NULL DEFAULT 'BOTH';
+        ALTER TABLE items ADD COLUMN IF NOT EXISTS default_unit TEXT NOT NULL DEFAULT 'KG';
+        ALTER TABLE sales ADD COLUMN IF NOT EXISTS idempotency_key UUID UNIQUE;
+        ALTER TABLE purchases ADD COLUMN IF NOT EXISTS idempotency_key UUID UNIQUE;
+
+        UPDATE items SET code = 'GO22' WHERE name = 'Gold Ornaments 22K' AND code IS NULL;
+        UPDATE items SET code = 'SP92' WHERE name = 'Silver Payal 92.5' AND code IS NULL;
+        UPDATE items SET code = 'SB80' WHERE name = 'Silver Bangles 80T' AND code IS NULL;
+        UPDATE items SET code = 'CZ', allowed_units = 'PCS', default_unit = 'PCS' WHERE name = 'Loose Cubic Zirconia' AND code IS NULL;
+      `);
+      await pool.query('INSERT INTO _migrations (name) VALUES ($1)', ['003_add_item_code_and_units_and_idempotency']);
+      console.log('✓ 003_add_item_code_and_units_and_idempotency applied successfully.');
+    } else {
+      console.log('✓ 003_add_item_code_and_units_and_idempotency has already been applied.');
+    }
+
     console.log('All migrations completed successfully.');
   } catch (error) {
     console.error('Migration failed:', error);

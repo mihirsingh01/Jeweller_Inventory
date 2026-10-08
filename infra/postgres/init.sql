@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
     category TEXT,
+    code TEXT UNIQUE,
+    allowed_units TEXT NOT NULL DEFAULT 'BOTH' CHECK (allowed_units IN ('PCS', 'KG', 'BOTH')),
+    default_unit TEXT NOT NULL DEFAULT 'KG' CHECK (default_unit IN ('PCS', 'KG')),
     is_active BOOLEAN NOT NULL DEFAULT true
 );
 
@@ -86,6 +89,7 @@ CREATE TABLE IF NOT EXISTS bank_accounts (
 CREATE TABLE IF NOT EXISTS sales (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     bill_no BIGINT NOT NULL UNIQUE DEFAULT nextval('sale_bill_seq'),
+    idempotency_key UUID UNIQUE,
     party_id UUID NOT NULL REFERENCES parties(id),
     entry_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     due_date DATE NOT NULL,
@@ -114,6 +118,7 @@ CREATE TABLE IF NOT EXISTS sale_lines (
 CREATE TABLE IF NOT EXISTS purchases (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     bill_no BIGINT NOT NULL UNIQUE DEFAULT nextval('purchase_bill_seq'),
+    idempotency_key UUID UNIQUE,
     party_id UUID NOT NULL REFERENCES parties(id),
     entry_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     due_date DATE,
@@ -301,12 +306,12 @@ VALUES
     ('22222222-2222-2222-2222-222222222222', 'Amit Verma (Staff)', 'amit', '$argon2id$v=19$m=65536,t=3,p=4$2q1zT4K9gqB$a/X5+hG3cK', 'STAFF')
 ON CONFLICT (username) DO NOTHING;
 
-INSERT INTO items (id, name, category)
+INSERT INTO items (id, name, category, code, allowed_units, default_unit)
 VALUES 
-    ('aaaaaaaa-1111-0000-0000-000000000001', 'Gold Ornaments 22K', 'Gold Ornaments'),
-    ('aaaaaaaa-1111-0000-0000-000000000002', 'Silver Payal 92.5', 'Silver Ornaments'),
-    ('aaaaaaaa-1111-0000-0000-000000000003', 'Silver Bangles 80T', 'Silver Ornaments'),
-    ('aaaaaaaa-1111-0000-0000-000000000004', 'Loose Cubic Zirconia', 'Stones')
+    ('aaaaaaaa-1111-0000-0000-000000000001', 'Gold Ornaments 22K', 'Gold Ornaments', 'GO22', 'BOTH', 'KG'),
+    ('aaaaaaaa-1111-0000-0000-000000000002', 'Silver Payal 92.5', 'Silver Ornaments', 'SP92', 'BOTH', 'KG'),
+    ('aaaaaaaa-1111-0000-0000-000000000003', 'Silver Bangles 80T', 'Silver Ornaments', 'SB80', 'BOTH', 'KG'),
+    ('aaaaaaaa-1111-0000-0000-000000000004', 'Loose Cubic Zirconia', 'Stones', 'CZ', 'PCS', 'PCS')
 ON CONFLICT (name) DO NOTHING;
 
 INSERT INTO bank_accounts (id, name, opening_balance)

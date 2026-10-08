@@ -46,6 +46,10 @@ export class CreateSaleDto {
   @IsString()
   notes?: string;
 
+  @IsOptional()
+  @IsUUID()
+  idempotency_key?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SaleLineItemDto)

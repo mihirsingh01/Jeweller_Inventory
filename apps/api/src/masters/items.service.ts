@@ -8,6 +8,9 @@ import { DatabaseService } from '../database/database.service';
 export interface CreateItemDto {
   name: string;
   category?: string;
+  code?: string;
+  allowed_units?: 'PCS' | 'KG' | 'BOTH';
+  default_unit?: 'PCS' | 'KG';
   opening_pieces?: number;
   opening_weight_kg?: number;
 }
@@ -15,6 +18,9 @@ export interface CreateItemDto {
 export interface UpdateItemDto {
   name?: string;
   category?: string;
+  code?: string;
+  allowed_units?: 'PCS' | 'KG' | 'BOTH';
+  default_unit?: 'PCS' | 'KG';
   is_active?: boolean;
 }
 
@@ -24,7 +30,7 @@ export class ItemsService {
 
   async findAll(search?: string, limit = 50, offset = 0) {
     let query = `
-      SELECT i.id, i.name, i.category, i.is_active,
+      SELECT i.id, i.name, i.category, i.code, i.allowed_units, i.default_unit, i.is_active,
              COALESCE(SUM(sm.pieces_delta), 0) AS stock_pieces,
              COALESCE(SUM(sm.kg_delta), 0.000) AS stock_kg
       FROM items i
@@ -35,11 +41,12 @@ export class ItemsService {
     let idx = 1;
 
     if (search) {
-      query += ` AND i.name ILIKE $${idx++}`;
+      query += ` AND (i.name ILIKE $${idx} OR (i.code IS NOT NULL AND i.code ILIKE $${idx}))`;
       params.push(`%${search}%`);
+      idx++;
     }
 
-    query += ` GROUP BY i.id, i.name, i.category, i.is_active ORDER BY i.name ASC LIMIT $${idx++} OFFSET $${idx}`;
+    query += ` GROUP BY i.id, i.name, i.category, i.code, i.allowed_units, i.default_unit, i.is_active ORDER BY i.name ASC LIMIT $${idx++} OFFSET $${idx}`;
     params.push(limit, offset);
 
     const res = await this.db.query(query, params);
@@ -48,13 +55,13 @@ export class ItemsService {
 
   async findOne(id: string) {
     const res = await this.db.query(
-      `SELECT i.id, i.name, i.category, i.is_active,
+      `SELECT i.id, i.name, i.category, i.code, i.allowed_units, i.default_unit, i.is_active,
               COALESCE(SUM(sm.pieces_delta), 0) AS stock_pieces,
               COALESCE(SUM(sm.kg_delta), 0.000) AS stock_kg
        FROM items i
        LEFT JOIN stock_movements sm ON sm.item_id = i.id
        WHERE i.id = $1
-       GROUP BY i.id, i.name, i.category, i.is_active`,
+       GROUP BY i.id, i.name, i.category, i.code, i.allowed_units, i.default_unit, i.is_active`,
       [id],
     );
     if (res.rows.length === 0) {
@@ -65,9 +72,13 @@ export class ItemsService {
 
   async create(dto: CreateItemDto) {
     try {
+      const code = dto.code ? dto.code.trim().toUpperCase() : null;
+      const allowedUnits = dto.allowed_units || 'BOTH';
+      const defaultUnit = dto.default_unit || 'KG';
+
       const res = await this.db.query(
-        `INSERT INTO items (name, category) VALUES ($1, $2) RETURNING *`,
-        [dto.name.trim(), dto.category ? dto.category.trim() : null],
+        `INSERT INTO items (name, category, code, allowed_units, default_unit) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [dto.name.trim(), dto.category ? dto.category.trim() : null, code, allowedUnits, defaultUnit],
       );
       const item = res.rows[0];
 
@@ -95,6 +106,9 @@ export class ItemsService {
       };
     } catch (err: any) {
       if (err.code === '23505') {
+        if (err.detail && err.detail.includes('code')) {
+          throw new ConflictException(`Item with code '${dto.code}' already exists.`);
+        }
         throw new ConflictException(`Item with name '${dto.name}' already exists.`);
       }
       throw err;
@@ -113,6 +127,18 @@ export class ItemsService {
     if (dto.category !== undefined) {
       updates.push(`category = $${idx++}`);
       values.push(dto.category ? dto.category.trim() : null);
+    }
+    if (dto.code !== undefined) {
+      updates.push(`code = $${idx++}`);
+      values.push(dto.code ? dto.code.trim().toUpperCase() : null);
+    }
+    if (dto.allowed_units !== undefined) {
+      updates.push(`allowed_units = $${idx++}`);
+      values.push(dto.allowed_units);
+    }
+    if (dto.default_unit !== undefined) {
+      updates.push(`default_unit = $${idx++}`);
+      values.push(dto.default_unit);
     }
     if (dto.is_active !== undefined) {
       updates.push(`is_active = $${idx++}`);

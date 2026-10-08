@@ -33,11 +33,11 @@ let mockParties: Party[] = [
 ];
 
 let mockItems: Item[] = [
-  { id: 'i1', name: 'Gold 22K Plain Bangles', category: 'Gold Ornaments', stock_pieces: 18, stock_kg: 0.425, is_active: true },
-  { id: 'i2', name: 'Silver Traditional Payal 92.5', category: 'Silver Ornaments', stock_pieces: 84, stock_kg: 8.640, is_active: true },
-  { id: 'i3', name: 'Silver Heavy Kada 80T', category: 'Silver Ornaments', stock_pieces: 32, stock_kg: 4.800, is_active: true },
-  { id: 'i4', name: 'CZ Solitaire Ring Mountings', category: 'Diamond Studded', stock_pieces: 4, stock_kg: 0.035, is_active: true },
-  { id: 'i5', name: 'Gold Bracelet 22K', category: 'Gold Ornaments', stock_pieces: 12, stock_kg: 0.280, is_active: true },
+  { id: 'i1', name: 'Gold 22K Plain Bangles', category: 'Gold Ornaments', code: 'GO22', allowed_units: 'BOTH', default_unit: 'KG', stock_pieces: 18, stock_kg: 0.425, is_active: true },
+  { id: 'i2', name: 'Silver Traditional Payal 92.5', category: 'Silver Ornaments', code: 'SP92', allowed_units: 'BOTH', default_unit: 'KG', stock_pieces: 84, stock_kg: 8.640, is_active: true },
+  { id: 'i3', name: 'Silver Heavy Kada 80T', category: 'Silver Ornaments', code: 'SB80', allowed_units: 'BOTH', default_unit: 'KG', stock_pieces: 32, stock_kg: 4.800, is_active: true },
+  { id: 'i4', name: 'CZ Solitaire Ring Mountings', category: 'Diamond Studded', code: 'CZ', allowed_units: 'PCS', default_unit: 'PCS', stock_pieces: 4, stock_kg: 0.035, is_active: true },
+  { id: 'i5', name: 'Gold Bracelet 22K', category: 'Gold Ornaments', code: 'GB22', allowed_units: 'BOTH', default_unit: 'KG', stock_pieces: 12, stock_kg: 0.280, is_active: true },
 ];
 
 let mockStockMovements: StockMovement[] = [

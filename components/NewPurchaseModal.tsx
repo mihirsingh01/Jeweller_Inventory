@@ -1,11 +1,14 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Party, Item } from '@/lib/api/types';
+import { Party, Item, GridLineItem } from '@/lib/api/types';
 import { createPurchase } from '@/lib/api/services';
 import { formatRupee } from '@/lib/format';
 import { QuickAddPartyDialog } from './QuickAddPartyDialog';
+import { ItemEntryGrid } from './ItemEntryGrid';
 import { useAltKeyShortcut } from '@/lib/hooks/useAltKeyShortcut';
+import { useSaveShortcut } from '@/lib/hooks/useSaveShortcut';
+import { useBackspaceNavigationGuard } from '@/lib/hooks/useBackspaceNavigationGuard';
 
 interface NewPurchaseModalProps {
   isOpen: boolean;
@@ -19,9 +22,8 @@ export function NewPurchaseModal({ isOpen, onClose, parties, items, onPurchaseCr
   const [partyId, setPartyId] = useState(parties.find((p) => p.type === 'SUPPLIER' || p.type === 'BOTH')?.id || parties[0]?.id || '');
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
-  const [lines, setLines] = useState([
-    { item_id: items[0]?.id || '', pieces: 5, weight_kg: 0.500, rate: 70000, amount: 35000 },
-  ]);
+  const [validLines, setValidLines] = useState<GridLineItem[]>([]);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
 
@@ -32,32 +34,30 @@ export function NewPurchaseModal({ isOpen, onClose, parties, items, onPurchaseCr
     isDialogOpen: showQuickAdd,
   });
 
-  if (!isOpen) return null;
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (loading) return;
 
-  const handleLineChange = (index: number, field: string, value: any) => {
-    const updated = [...lines];
-    (updated[index] as any)[field] = value;
-    const l = updated[index];
-    const calc = l.weight_kg > 0 ? l.weight_kg * l.rate : l.pieces * l.rate;
-    l.amount = Math.round(calc);
-    setLines(updated);
-  };
+    if (validLines.length === 0) {
+      alert('Please add at least one valid item line with quantity and rate.');
+      return;
+    }
 
-  const addLine = () => {
-    setLines([...lines, { item_id: items[0]?.id || '', pieces: 1, weight_kg: 0.200, rate: 70000, amount: 14000 }]);
-  };
-
-  const totalAmount = lines.reduce((acc, l) => acc + (l.amount || 0), 0);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
     setLoading(true);
     try {
       await createPurchase({
         party_id: partyId,
         due_date: dueDate || undefined,
         notes,
-        lines,
+        idempotency_key: idempotencyKey,
+        lines: validLines.map((l) => ({
+          item_id: l.item_id,
+          unit: l.unit,
+          pieces: l.pieces || 0,
+          weight_kg: l.weight_kg || 0,
+          rate: l.rate,
+          amount: l.amount,
+        })),
       });
       onPurchaseCreated();
       onClose();
@@ -67,6 +67,20 @@ export function NewPurchaseModal({ isOpen, onClose, parties, items, onPurchaseCr
       setLoading(false);
     }
   };
+
+  const { idempotencyKey } = useSaveShortcut({
+    onSave: handleSubmit,
+    isSaving: loading,
+    enabled: isOpen && !showQuickAdd,
+  });
+
+  useBackspaceNavigationGuard({
+    isDirty: validLines.length > 0 || notes.length > 0,
+    isDialogOpen: isOpen,
+    onBack: onClose,
+  });
+
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay">
@@ -119,27 +133,19 @@ export function NewPurchaseModal({ isOpen, onClose, parties, items, onPurchaseCr
               </div>
             </div>
 
+            {/* Fast-Entry Line Items Grid */}
             <div style={{ marginTop: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, color: '#2B2B2B' }}>Line Items</label>
-                <button type="button" className="text-button" onClick={addLine}>＋ Add Item Line</button>
-              </div>
-
-              {lines.map((line, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr 1.2fr 1.2fr', gap: 8, alignItems: 'center', marginBottom: 8, background: '#FAF6F2', padding: 10, borderRadius: 8 }}>
-                  <select className="form-select" value={line.item_id} onChange={(e) => handleLineChange(idx, 'item_id', e.target.value)}>
-                    {items.map((it) => (
-                      <option key={it.id} value={it.id}>{it.name}</option>
-                    ))}
-                  </select>
-                  <input type="number" min="0" className="form-input tabular-numbers" placeholder="Pcs" value={line.pieces} onChange={(e) => handleLineChange(idx, 'pieces', parseInt(e.target.value) || 0)} />
-                  <input type="number" step="0.001" min="0" className="form-input tabular-numbers" placeholder="Kg" value={line.weight_kg} onChange={(e) => handleLineChange(idx, 'weight_kg', parseFloat(e.target.value) || 0)} />
-                  <input type="number" min="0" className="form-input tabular-numbers" placeholder="Rate ₹" value={line.rate} onChange={(e) => handleLineChange(idx, 'rate', parseFloat(e.target.value) || 0)} />
-                  <div style={{ fontSize: 13, fontWeight: 700, textAlign: 'right' }} className="tabular-numbers">
-                    {formatRupee(line.amount)}
-                  </div>
-                </div>
-              ))}
+              <label style={{ fontSize: 12, fontWeight: 700, color: '#2B2B2B', display: 'block', marginBottom: 8 }}>
+                Line Items (Auto-Add Rows & Fast Keyboard Grid)
+              </label>
+              <ItemEntryGrid
+                items={items}
+                onChange={(lines, subtotal) => {
+                  setValidLines(lines);
+                  setTotalAmount(subtotal);
+                }}
+                disabled={loading}
+              />
             </div>
 
             <div className="form-group full-width" style={{ marginTop: 8 }}>
@@ -163,7 +169,7 @@ export function NewPurchaseModal({ isOpen, onClose, parties, items, onPurchaseCr
           <div className="modal-footer">
             <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="primary-button" disabled={loading} style={{ background: '#B8893B' }}>
-              {loading ? 'Recording Purchase...' : 'Save Purchase ↙'}
+              {loading ? 'Recording Purchase...' : 'Save Purchase [Ctrl+S] ↙'}
             </button>
           </div>
         </form>

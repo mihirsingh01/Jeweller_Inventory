@@ -102,6 +102,16 @@ export class SalesService {
       throw new BadRequestException('At least one item line is required');
     }
 
+    if (dto.idempotency_key) {
+      const existing = await this.db.query(
+        `SELECT id FROM sales WHERE idempotency_key = $1`,
+        [dto.idempotency_key],
+      );
+      if (existing.rows.length > 0) {
+        return this.findOne(existing.rows[0].id, user);
+      }
+    }
+
     const savedSale = await this.db.withTransaction(async (client) => {
       let totalAmount = 0;
 
@@ -154,10 +164,10 @@ export class SalesService {
 
       // 1. Insert Sales Header
       const saleInsert = await client.query(
-        `INSERT INTO sales (party_id, due_date, total_amount, notes, created_by)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO sales (party_id, due_date, total_amount, notes, created_by, idempotency_key)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [dto.party_id, dto.due_date, totalAmount, dto.notes || null, user.id],
+        [dto.party_id, dto.due_date, totalAmount, dto.notes || null, user.id, dto.idempotency_key || null],
       );
       const sale = saleInsert.rows[0];
 

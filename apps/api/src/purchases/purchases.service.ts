@@ -21,6 +21,7 @@ export interface CreatePurchaseDto {
   party_id: string;
   due_date?: string;
   notes?: string;
+  idempotency_key?: string;
   lines: PurchaseLineDto[];
 }
 
@@ -116,6 +117,16 @@ export class PurchasesService {
       throw new BadRequestException('At least one purchase line is required');
     }
 
+    if (dto.idempotency_key) {
+      const existing = await this.db.query(
+        `SELECT id FROM purchases WHERE idempotency_key = $1`,
+        [dto.idempotency_key],
+      );
+      if (existing.rows.length > 0) {
+        return this.findOne(existing.rows[0].id, user);
+      }
+    }
+
     const savedPurchase = await this.db.withTransaction(async (client) => {
       let totalAmount = 0;
       for (const line of dto.lines) {
@@ -136,10 +147,10 @@ export class PurchasesService {
 
       // 1. Insert Purchase Header
       const purchaseInsert = await client.query(
-        `INSERT INTO purchases (party_id, due_date, total_amount, notes, created_by)
-         VALUES ($1, $2, $3, $4, $5)
+        `INSERT INTO purchases (party_id, due_date, total_amount, notes, created_by, idempotency_key)
+         VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING *`,
-        [dto.party_id, dto.due_date || null, totalAmount, dto.notes || null, user.id],
+        [dto.party_id, dto.due_date || null, totalAmount, dto.notes || null, user.id, dto.idempotency_key || null],
       );
       const purchase = purchaseInsert.rows[0];
 

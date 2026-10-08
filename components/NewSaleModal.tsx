@@ -1,11 +1,14 @@
 'use client'
 
 import React, { useState } from 'react';
-import { Party, Item } from '@/lib/api/types';
+import { Party, Item, GridLineItem } from '@/lib/api/types';
 import { createSale, sendBillOnWhatsApp } from '@/lib/api/services';
 import { formatRupee } from '@/lib/format';
 import { QuickAddPartyDialog } from './QuickAddPartyDialog';
+import { ItemEntryGrid } from './ItemEntryGrid';
 import { useAltKeyShortcut } from '@/lib/hooks/useAltKeyShortcut';
+import { useSaveShortcut } from '@/lib/hooks/useSaveShortcut';
+import { useBackspaceNavigationGuard } from '@/lib/hooks/useBackspaceNavigationGuard';
 
 interface NewSaleModalProps {
   isOpen: boolean;
@@ -23,9 +26,8 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
     return d.toISOString().split('T')[0];
   });
   const [notes, setNotes] = useState('');
-  const [lines, setLines] = useState([
-    { item_id: items[0]?.id || '', pieces: 1, weight_kg: 0.150, rate: 72000, amount: 10800 },
-  ]);
+  const [validLines, setValidLines] = useState<GridLineItem[]>([]);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
 
   // Quick add customer dialog state & Alt+C shortcut
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -43,41 +45,30 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
   const [waSending, setWaSending] = useState(false);
   const [waSent, setWaSent] = useState(false);
 
-  if (!isOpen) return null;
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (loading) return;
 
-  const handleLineChange = (index: number, field: string, value: any) => {
-    const updated = [...lines];
-    (updated[index] as any)[field] = value;
-    const l = updated[index];
-    const calcAmount = l.weight_kg > 0 ? l.weight_kg * l.rate : l.pieces * l.rate;
-    l.amount = Math.round(calcAmount);
-    setLines(updated);
-  };
-
-  const addLine = () => {
-    setLines([
-      ...lines,
-      { item_id: items[0]?.id || '', pieces: 1, weight_kg: 0.100, rate: 72000, amount: 7200 },
-    ]);
-  };
-
-  const removeLine = (index: number) => {
-    if (lines.length > 1) {
-      setLines(lines.filter((_, i) => i !== index));
+    if (validLines.length === 0) {
+      alert('Please add at least one valid item line with quantity and rate.');
+      return;
     }
-  };
 
-  const totalAmount = lines.reduce((acc, l) => acc + (l.amount || 0), 0);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
     setLoading(true);
     try {
       const sale = await createSale({
         party_id: partyId,
         due_date: dueDate,
         notes,
-        lines,
+        idempotency_key: idempotencyKey,
+        lines: validLines.map((l) => ({
+          item_id: l.item_id,
+          unit: l.unit,
+          pieces: l.pieces || 0,
+          weight_kg: l.weight_kg || 0,
+          rate: l.rate,
+          amount: l.amount,
+        })),
       });
       setSuccessSale(sale);
       onSaleCreated();
@@ -88,6 +79,19 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
     }
   };
 
+  const { idempotencyKey, resetIdempotencyKey } = useSaveShortcut({
+    onSave: handleSubmit,
+    isSaving: loading,
+    enabled: isOpen && !showQuickAdd && !successSale,
+  });
+
+  useBackspaceNavigationGuard({
+    isDirty: validLines.length > 0 || notes.length > 0,
+    isDialogOpen: isOpen,
+    onBack: onClose,
+  });
+
+  if (!isOpen) return null;
 
   const handleSendWhatsApp = async () => {
     if (!successSale) return;
@@ -105,7 +109,9 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
   const handleAddAnother = () => {
     setSuccessSale(null);
     setWaSent(false);
-    setLines([{ item_id: items[0]?.id || '', pieces: 1, weight_kg: 0.150, rate: 72000, amount: 10800 }]);
+    resetIdempotencyKey();
+    setValidLines([]);
+    setTotalAmount(0);
     setNotes('');
   };
 
@@ -189,31 +195,19 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
                 </div>
               </div>
 
-              {/* Line Items */}
+              {/* Fast-Entry Line Items Grid */}
               <div style={{ marginTop: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: '#2B2B2B' }}>Line Items</label>
-                  <button type="button" className="text-button" onClick={addLine}>＋ Add Item Line</button>
-                </div>
-
-                {lines.map((line, idx) => (
-                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.2fr 1.2fr 1.2fr auto', gap: 8, alignItems: 'center', marginBottom: 8, background: '#FAF6F2', padding: 10, borderRadius: 8 }}>
-                    <select className="form-select" value={line.item_id} onChange={(e) => handleLineChange(idx, 'item_id', e.target.value)}>
-                      {items.map((it) => (
-                        <option key={it.id} value={it.id}>{it.name}</option>
-                      ))}
-                    </select>
-                    <input type="number" min="0" className="form-input tabular-numbers" placeholder="Pcs" value={line.pieces} onChange={(e) => handleLineChange(idx, 'pieces', parseInt(e.target.value) || 0)} title="Pieces" />
-                    <input type="number" step="0.001" min="0" className="form-input tabular-numbers" placeholder="Kg" value={line.weight_kg} onChange={(e) => handleLineChange(idx, 'weight_kg', parseFloat(e.target.value) || 0)} title="Weight (Kg)" />
-                    <input type="number" min="0" className="form-input tabular-numbers" placeholder="Rate ₹" value={line.rate} onChange={(e) => handleLineChange(idx, 'rate', parseFloat(e.target.value) || 0)} title="Rate per unit" />
-                    <div style={{ fontSize: 13, fontWeight: 700, textAlign: 'right', paddingRight: 6 }} className="tabular-numbers">
-                      {formatRupee(line.amount)}
-                    </div>
-                    {lines.length > 1 && (
-                      <button type="button" onClick={() => removeLine(idx)} style={{ color: '#DC2626', background: 'transparent', border: 0, cursor: 'pointer', fontSize: 16 }}>✕</button>
-                    )}
-                  </div>
-                ))}
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#2B2B2B', display: 'block', marginBottom: 8 }}>
+                  Line Items (Auto-Add Rows & Fast Keyboard Grid)
+                </label>
+                <ItemEntryGrid
+                  items={items}
+                  onChange={(lines, subtotal) => {
+                    setValidLines(lines);
+                    setTotalAmount(subtotal);
+                  }}
+                  disabled={loading}
+                />
               </div>
 
               <div className="form-group full-width" style={{ marginTop: 8 }}>
@@ -240,7 +234,7 @@ export function NewSaleModal({ isOpen, onClose, parties, items, onSaleCreated }:
             <div className="modal-footer">
               <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
               <button type="submit" className="primary-button" disabled={loading}>
-                {loading ? 'Saving Sale...' : 'Save Sale Entry ↗'}
+                {loading ? 'Saving Sale...' : 'Save Sale Entry [Ctrl+S] ↗'}
               </button>
             </div>
           </form>
