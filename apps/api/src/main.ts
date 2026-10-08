@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const cookieParser = require('cookie-parser');
 
 async function bootstrap() {
   const logger = new Logger('KumkumPayalBootstrap');
@@ -10,8 +12,8 @@ async function bootstrap() {
 
   const cookieMiddleware =
     typeof cookieParser === 'function'
-      ? (cookieParser as any)()
-      : (cookieParser as any)?.default?.();
+      ? cookieParser()
+      : cookieParser?.default?.();
   if (cookieMiddleware) {
     app.use(cookieMiddleware);
   }
